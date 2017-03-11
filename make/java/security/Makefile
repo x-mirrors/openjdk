@@ -26,6 +26,8 @@
 BUILDDIR = ../..
 PACKAGE = java.security
 PRODUCT = sun
+JAVAC_MAX_WARNINGS = false
+JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -37,18 +39,26 @@ AUTO_FILES_JAVA_DIRS = java/security
 # Directories
 #
 
-PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security
+# The default security properties file is for linux
+PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-linux
 
 ifeq ($(PLATFORM), solaris)
 PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-solaris
 
-else # PLATFORM
+else # NOT_SOLARIS
 
 # Register Microsoft CryptoAPI provider only on Windows platform.
 ifeq ($(PLATFORM), windows)
   PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-windows
-endif
-endif # PLATFORM
+
+else # NOT_WINDOWS
+
+ifeq ($(PLATFORM), macosx)
+  PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-macosx
+endif # MACOSX
+
+endif # NOT_WINDOWS
+endif # NOT_SOLARIS
 
 
 PROPS_BUILD = $(LIBDIR)/security/java.security
@@ -59,9 +69,13 @@ POLICY_BUILD = $(LIBDIR)/security/java.policy
 CACERTS_SRC =	$(CACERTS_FILE)
 CACERTS_BUILD = $(LIBDIR)/security/cacerts
 
+BLACKLISTED_CERTS_SRC =	$(TOPDIR)/src/share/lib/security/blacklisted.certs
+BLACKLISTED_CERTS_BUILD = $(LIBDIR)/security/blacklisted.certs
+
 ifndef OPENJDK
   BLACKLIST_SRC =	$(CLOSED_SHARE_SRC)/lib/security/blacklist
   BLACKLIST_BUILD = $(LIBDIR)/security/blacklist
+  BLACKLISTED_CERTS_SRC +=	$(wildcard $(CLOSED_SHARE_SRC)/lib/security/blacklisted.certs)
   TRUSTEDLIBS_SRC = $(CLOSED_SHARE_SRC)/lib/security/trusted.libraries
   TRUSTEDLIBS_BUILD = $(LIBDIR)/security/trusted.libraries
 endif
@@ -74,9 +88,9 @@ FILES_class = $(FILES_java:%.java=$(CLASSBINDIR)/%.class)
 include $(BUILDDIR)/common/Rules.gmk
 
 ifdef OPENJDK
-build: properties policy cacerts
+build: properties policy cacerts blacklisted-certs
 else
-build: properties policy cacerts blacklist trustedlibs
+build: properties policy cacerts blacklist blacklisted-certs trustedlibs
 endif
 
 install: all
@@ -88,6 +102,8 @@ policy: classes  $(POLICY_BUILD)
 cacerts: classes $(CACERTS_BUILD)
 
 blacklist: classes $(BLACKLIST_BUILD)
+
+blacklisted-certs: classes $(BLACKLISTED_CERTS_BUILD)
 
 trustedlibs: classes $(TRUSTEDLIBS_BUILD)
 
@@ -103,12 +119,25 @@ $(CACERTS_BUILD): $(CACERTS_SRC)
 $(BLACKLIST_BUILD): $(BLACKLIST_SRC)
 	$(install-file)
 
+$(BLACKLISTED_CERTS_BUILD): $(BLACKLISTED_CERTS_SRC)
+	$(MKDIR) -p $(@D)
+	$(CAT) $^ | $(SED) '/^$$/d' | $(SORT) | $(UNIQ) > $@.tmp
+	$(GREP) -i Algorithm $@.tmp > $@
+	if [ `$(SED) -n -e "$$=" $@` != 1 ]; then \
+	   $(ECHO) "Different algorithms defined in $^"; \
+	   $(RM) $@ $@.tmp; \
+	   false; \
+	fi
+	$(GREP) -iv Algorithm $@.tmp >> $@
+	$(RM) $@.tmp
+
 $(TRUSTEDLIBS_BUILD): $(TRUSTEDLIBS_SRC)
 	$(install-file)
 
 clean clobber:: .delete.classlist
 	$(RM) -r $(CLASSBINDIR)/java/security
-	$(RM) $(PROPS_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(BLACKLIST_BUILD) $(TRUSTEDLIBS_BUILD)
+	$(RM) $(PROPS_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(BLACKLIST_BUILD) \
+	      $(BLACKLISTED_CERTS_BUILD) $(TRUSTEDLIBS_BUILD)
 
 # Additional Rule for building sun.security.util
 $(CLASSBINDIR)/%.class: $(SHARE_SRC)/sun/%.java

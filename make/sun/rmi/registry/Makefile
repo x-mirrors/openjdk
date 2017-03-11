@@ -28,6 +28,8 @@
 #
 
 BUILDDIR = ../../..
+JAVAC_MAX_WARNINGS = true
+JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 PACKAGE = sun.rmi.registry
 PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk

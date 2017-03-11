@@ -1,5 +1,5 @@
 repo: 37a05a11f281b4d238e2f9e7ebb67c63f64d0e77
-node: 9b8c96f96a0f9a5801b55530a387fefbe50482a3
+node: 28c5423c145d8718d6b1ac22a5a892b95437a190
 branch: default
-latesttag: jdk7-b147
-latesttagdistance: 1
+latesttag: jdk7u131-b00
+latesttagdistance: 3

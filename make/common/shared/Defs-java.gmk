@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -66,7 +66,12 @@ JAVA_HOTSPOT_DISABLE_PRINT_VMOPTIONS = \
    -XX:-PrintVMOptions -XX:+UnlockDiagnosticVMOptions -XX:-LogVMOutput
 
 # JVM options
-JAVA_JVM_FLAGS = $(JAVA_HOTSPOT_DISABLE_PRINT_VMOPTIONS)
+# MMM: is headless option necessary?
+ifeq ($(PLATFORM), macosx)
+  JAVA_JVM_FLAGS = $(JAVA_HOTSPOT_DISABLE_PRINT_VMOPTIONS) -Djava.awt.headless=true
+else
+  JAVA_JVM_FLAGS = $(JAVA_HOTSPOT_DISABLE_PRINT_VMOPTIONS)
+endif
 
 ifeq ($(ADD_CLIENT_VM_OPTION), true)
   JAVA_JVM_FLAGS += -client
@@ -85,7 +90,7 @@ JAVAC_JVM_FLAGS =
 ifeq ($(ARCH_DATA_MODEL), 32)
   JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=768
 else
-  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1536
+  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=2096
 endif
 JAVAC_JVM_FLAGS    += $(JAVA_TOOLS_FLAGS:%=-J%)
 
@@ -116,11 +121,16 @@ ifeq ($(DEBUG_CLASSFILES),true)
   JAVACFLAGS += -g
 endif
 ifeq ($(JAVAC_MAX_WARNINGS), true)
-  JAVACFLAGS  += -Xlint:all
+  JAVAC_LINT_OPTIONS += -Xlint:all
 endif
 ifeq ($(JAVAC_WARNINGS_FATAL), true)
   JAVACFLAGS  += -Werror
 endif
+
+# TODO: Workaround for CR 7063027. Remove -path eventually.
+JAVAC_LINT_OPTIONS += -Xlint:-path
+
+JAVACFLAGS += $(JAVAC_LINT_OPTIONS)
 
 #
 # Some licensees do not get the Security Source bundles.  We will
@@ -130,7 +140,7 @@ endif
 # built implicitly/explicitly.
 #
 ifeq ($(wildcard $(SHARE_SRC)/classes/javax/crypto/Cipher.java),)
-  JCEFLAGS = $(CLASSPATH_SEPARATOR)$(LIBDIR)/jce.jar
+  JCE_PATH = $(CLASSPATH_SEPARATOR)$(LIBDIR)/jce.jar
 endif
 
 # Add the source level
@@ -143,15 +153,15 @@ TARGET_CLASS_VERSION = 7
 CLASS_VERSION = -target $(TARGET_CLASS_VERSION)
 JAVACFLAGS  += $(CLASS_VERSION)
 JAVACFLAGS  += -encoding ascii
-JAVACFLAGS  += "-Xbootclasspath:$(CLASSBINDIR)$(JCEFLAGS)"
+JAVACFLAGS  += "-Xbootclasspath:$(CLASSBINDIR)$(JCE_PATH)"
 JAVACFLAGS  += $(OTHER_JAVACFLAGS)
 
 # Needed for javah
-JAVAHFLAGS += -bootclasspath "$(CLASSBINDIR)$(JCEFLAGS)"
+JAVAHFLAGS += -bootclasspath "$(CLASSBINDIR)$(JCE_PATH)"
 
 # Needed for javadoc to ensure it builds documentation
 # against the newly built classes
-JAVADOCFLAGS += -bootclasspath $(CLASSBINDIR)
+JAVADOCFLAGS += -bootclasspath "$(CLASSBINDIR)$(JCE_PATH)"
 
 # Needed for JAVADOC and BOOT_JAVACFLAGS
 NO_PROPRIETARY_API_WARNINGS = -XDignore.symbol.file=true
@@ -178,7 +188,7 @@ else
   JAVAH_CMD     = $(JAVA_TOOLS_DIR)/javah \
 		  $(JAVAHFLAGS)
   JAVADOC_CMD   = $(JAVA_TOOLS_DIR)/javadoc $(JAVA_TOOLS_FLAGS:%=-J%) \
-  		  $(JAVADOCFLAGS)
+		  $(JAVADOCFLAGS)
 endif
 
 # Override of what javac to use (see deploy workspace)
@@ -211,9 +221,7 @@ endif
 # The javac options supplied to the boot javac is limited. This compiler
 #   should only be used to build the 'make/tools' sources, which are not
 #   class files that end up in the classes directory.
-ifeq ($(JAVAC_MAX_WARNINGS), true)
-  BOOT_JAVACFLAGS  += -Xlint:all
-endif
+BOOT_JAVACFLAGS += $(JAVAC_LINT_OPTIONS)
 ifeq ($(JAVAC_WARNINGS_FATAL), true)
   BOOT_JAVACFLAGS  += -Werror
 endif

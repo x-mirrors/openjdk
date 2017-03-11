@@ -36,7 +36,11 @@ PRODUCT = sun
 CPLUSPLUSLIBRARY=true
 
 # Use higher optimization level
-OPTIMIZATION_LEVEL = HIGHER
+ifeq ($(PLATFORM), windows)
+  OPTIMIZATION_LEVEL = HIGHEST
+else
+  OPTIMIZATION_LEVEL = HIGHER
+endif
 
 include $(BUILDDIR)/common/Defs.gmk
 
@@ -89,6 +93,24 @@ else # PLATFORM unix
     sun/awt/X11GraphicsEnvironment.java 
 
 endif # PLATFORM
+
+# Turn off aliasing with GCC for ExtensionSubtables.cpp (and others on GCC < 4.3)
+# Turn off strict overflow with GCC for IndicRearrangementProcessor.cpp on GCC >= 4.3
+# Ensure signed integers wrap with GCC for IndicRearrangementProcessor.cpp on GCC < 4.3
+ifeq ($(PLATFORM), linux)
+  CXXFLAGS += $(CXXFLAGS_$(@F))
+  CXXFLAGS_ExtensionSubtables.o = -fno-strict-aliasing
+ifeq "$(shell expr \( $(CC_VER_MAJOR) \> 4 \) \| \( \( $(CC_VER_MAJOR) = 4 \) \& \( $(CC_VER_MINOR) \>= 3 \) \))" "0"
+  # GCC >= 4.3.  This flag is not known in gcc 4.1.2.
+  CXXFLAGS_IndicRearrangementProcessor.o := -fno-strict-overflow
+  CXXFLAGS_IndicRearrangementProcessor2.o := -fno-strict-overflow
+else
+  CXXFLAGS_ContextualGlyphSubstProc.o = -fno-strict-aliasing
+  CXXFLAGS_IndicRearrangementProcessor.o := -fwrapv -fno-strict-aliasing
+  CXXFLAGS_IndicRearrangementProcessor2.o := -fwrapv
+  CXXFLAGS_MorphTables2.o = -fno-strict-aliasing
+endif
+endif
 
 #In the non-OpenJDK mode we need to build T2K
 ifndef OPENJDK
@@ -172,20 +194,39 @@ else # PLATFORM
 # Libraries to link, and other C flags.
 #
 
+ifeq ($(PLATFORM), macosx)
+OTHER_INCLUDES += -I$(X11_PATH)/include
+OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
+ ifeq ($(OS_VENDOR),Apple)
+   # XXXDARWIN Match BSD/Linux behavior -- the mawt.dylib symbols will
+   # be available at runtime.
+   OTHER_LDLIBS += -undefined dynamic_lookup
+ endif
+else
 ifeq ($(PLATFORM), solaris)
   # Note that on Solaris, fontmanager is built against the headless library.
   LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
   OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt -lc $(LIBM) $(LIBCXX)
+else
+ifeq ($(PLATFORM), aix)
+  LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
+  OTHER_LDLIBS += -G -lawt -lc $(LIBM) $(LIBCXX)
 else # PLATFORM is linux
  OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
   ifeq ("$(CC_VER_MAJOR)", "3")
     OTHER_LDLIBS  += -Wl,-Bstatic -lgcc_eh -Wl,-Bdynamic
   endif                           
 endif
+endif
+endif
 
 endif # PLATFORM
 
 # set up compile flags..
+
+ifeq ($(PLATFORM), macosx)
+CPPFLAGS += -I$(CLASSHDRDIR)
+endif
 
 CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR) \
             -I$(SHARE_SRC)/native/$(PKGDIR)/layout \

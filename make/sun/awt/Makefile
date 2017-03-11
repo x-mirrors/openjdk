@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -37,6 +37,10 @@ OPTMIZATION_LEVEL = HIGHEST
 include $(BUILDDIR)/common/Defs.gmk
 
 OTHER_CFLAGS += -D__MEDIALIB_OLD_NAMES -D__USE_J2D_NAMES
+
+ifneq  ($(PLATFORM), windows)
+CLASSES_INIT += $(TEMPDIR)/.gen_icons
+endif
 
 #
 # Files
@@ -93,7 +97,7 @@ AUTO_JAVA_PRUNE += X11 AWTCharset.java
 ifeq  ($(PLATFORM), solaris)
 FILES_c = $(FILES_2D_c)
 FILES_c += awt_LoadLibrary.c
-OTHER_LDLIBS = $(JVMLIB) $(LIBM) -ldl
+OTHER_LDLIBS = $(JVMLIB) $(LIBM) $(LIBDL)
 ifeq ($(CC_VER), 5.8)
   ifndef REMOVE_ALL_WORKAROUNDS
     ifeq ($(ARCH_FAMILY), i586)
@@ -120,12 +124,46 @@ ifeq  ($(PLATFORM), linux)
 FILES_c = $(FILES_2D_c)
 FILES_c += awt_LoadLibrary.c
 OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
-OTHER_LDLIBS = $(JVMLIB) $(LIBM) -ldl
+OTHER_LDLIBS = $(JVMLIB) $(LIBM) $(LIBDL)
+endif
+
+ifeq  ($(PLATFORM), aix)
+FILES_c = $(FILES_2D_c)
+FILES_c += awt_LoadLibrary.c
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_CFLAGS += -DMOTIF_VERSION=2
+OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lmlib_image $(JVMLIB) $(LIBM)
 endif
 
 FILES_c += initIDs.c
 
+ifeq ($(PLATFORM), macosx)
+FILES_c = $(FILES_2D_c)
+FILES_c += awt_LoadLibrary.c
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_LDLIBS = $(JVMLIB) $(LIBM)
+endif
+
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS/LINUX
+endif # PLATFORM 
+
+ifeq ($(PLATFORM), macosx)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv MAC OS X
+
+#
+# Files
+#
+
+FILES_objc = $(FILES_AWT_objc)
+OTHER_LDLIBS = -lmlib_image $(JVMLIB) $(LIBM) \
+    -framework Cocoa \
+    -framework OpenGL \
+    -framework JavaNativeFoundation \
+    -framework JavaRuntimeSupport \
+    -framework ApplicationServices \
+    -framework AudioToolbox
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MAC OS X
 endif # PLATFORM 
 
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv SOLARIS-SPARC
@@ -161,6 +199,10 @@ ifeq ($(PLATFORM), windows)
 	sun/awt/windows/awtLocalization.properties
 endif
 
+ifeq ($(PLATFORM), macosx)
+  NEW_RESOURCE_BUNDLES_COMPILED_PROPERTIES += \
+        sun/awt/resources/awtosx.properties
+endif
 #
 # Rules
 #
@@ -179,6 +221,79 @@ ifdef ALT_COMPILEFONTCONFIG_FLAGS
   COMPILEFONTCONFIG_FLAGS += $(ALT_COMPILEFONTCONFIG_FLAGS)
 endif
 build: fontconfigs
+
+ifneq ($(PLATFORM), windows)
+
+GEN_DIR=$(GENSRCDIR)/sun/awt/
+
+ifdef OPENJDK
+    ICONS_PATH_PREFIX=$(PLATFORM_SRC)
+else
+    ICONS_PATH_PREFIX=$(CLOSED_SRC)/solaris
+endif
+
+ICONS = \
+    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon16.png \
+    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon24.png \
+    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon32.png \
+    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon48.png
+
+ICONPATH=$(SHARE_SRC)/classes/sun/awt/resources
+
+ICONS += \
+   $(ICONPATH)/security-icon-bw16.png \
+   $(ICONPATH)/security-icon-interim16.png \
+   $(ICONPATH)/security-icon-yellow16.png \
+   $(ICONPATH)/security-icon-bw24.png \
+   $(ICONPATH)/security-icon-interim24.png \
+   $(ICONPATH)/security-icon-yellow24.png \
+   $(ICONPATH)/security-icon-bw32.png \
+   $(ICONPATH)/security-icon-interim32.png \
+   $(ICONPATH)/security-icon-yellow32.png \
+   $(ICONPATH)/security-icon-bw48.png \
+   $(ICONPATH)/security-icon-interim48.png \
+   $(ICONPATH)/security-icon-yellow48.png
+
+TEMPDIR_CLASSES = $(TEMPDIR)/classes
+   
+generated.clean:
+	$(RM) -r $(GEN_DIR)/*.java
+	$(RM) -r $(TEMPDIR)/.gen_icons   
+
+$(TEMPDIR_CLASSES)/sun/awt/ToBin.class: ToBin.java
+	@$(prep-target)
+	$(BOOT_JAVAC_CMD) -d $(TEMPDIR_CLASSES) $<
+
+$(TEMPDIR)/.gen_icons: $(TEMPDIR_CLASSES)/sun/awt/ToBin.class $(ICONS)
+	$(prep-target)
+	for i in $(ICONS); do \
+            filename=`basename $$i`; \
+	    name=`$(ECHO) $$filename | $(TR) '\-.' '__'`;  \
+            classname=$(GEN_DIR)/AWTIcon32_$$name.java; \
+	    $(RM) $$classname; \
+	    $(ECHO) "package sun.awt;" >> $$classname ; \
+	    $(ECHO) "public class AWTIcon32_$$name {" >> $$classname; \
+	    $(ECHO) "public final static int[] $$name = { " >> $$classname;  \
+	    $(CAT) $$i | \
+	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
+		-Djava.awt.headless=true \
+		sun.awt.ToBin >> $$classname; \
+	    $(ECHO) "}; }" >> $$classname;  \
+            classname=$(GEN_DIR)/AWTIcon64_$$name.java; \
+	    $(RM) $$classname; \
+	    $(ECHO) "package sun.awt;" >> $$classname ; \
+	    $(ECHO) "public class AWTIcon64_$$name {" >> $$classname; \
+	    $(ECHO) "public final static long[] $$name = { " >> $$classname;  \
+	    $(CAT) $$i | \
+	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
+		-Djava.awt.headless=true \
+		sun.awt.ToBin >> $$classname; \
+	    $(ECHO) "}; }" >> $$classname;  \
+	done
+	$(TOUCH) $@
+
+clean clobber:: generated.clean    
+endif
 
 
 ifeq ($(PLATFORM), windows)
@@ -240,13 +355,19 @@ vpath %.c     $(SHARE_SRC)/native/$(PKGDIR)/../font
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WINDOWS
 endif # PLATFORM
 
-ifeq ($(PLATFORM), linux)
+ifneq (,$(findstring $(PLATFORM), linux bsd))
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv LINUX
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/../java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/../java2d/x11
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../font
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ LINUX
+endif # PLATFORM
+
+ifeq ($(PLATFORM), macosx)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv MAC OS X
+vpath %.m   $(call NativeSrcDirList,,native/com/apple/resources)
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MAC OS X
 endif # PLATFORM
 
 ifeq ($(PLATFORM), windows)
@@ -367,7 +488,8 @@ else
 FONTCONFIGS_SRC	= $(CLOSED_SRC)/solaris/classes/sun/awt/fontconfigs
 _FONTCONFIGS	= \
 	fontconfig.properties				\
-	fontconfig.RedHat.5.5.properties		\
+	fontconfig.RedHat.5.properties			\
+	fontconfig.RedHat.6.properties			\
 	fontconfig.Turbo.properties			\
 	fontconfig.SuSE.10.properties                   \
 	fontconfig.SuSE.11.properties
@@ -388,6 +510,38 @@ _FONTCONFIGS	= \
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS
+endif # PLATFORM
+
+
+ifeq ($(PLATFORM), macosx)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv MAC OS X
+
+FONTCONFIGS_SRC = $(JDK_TOPDIR)/src/macosx/classes/sun/awt/fontconfigs
+_FONTCONFIGS    = \
+        fontconfig.properties
+
+FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MAC OS X
+endif # PLATFORM
+
+ifeq ($(PLATFORM), aix)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv AIX
+
+ifdef OPENJDK
+
+FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
+_FONTCONFIGS	= \
+	fontconfig.properties
+else
+
+$(error "Currently we only support the 'OPENJDK' configuration for AIX")
+
+endif
+
+FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AIX
 endif # PLATFORM
 
 FONTCONFIGS     = $(_FONTCONFIGS:%=$(LIBDIR)/%.src)
@@ -517,5 +671,5 @@ CLASSES.export += java.io.InputStream \
 		  java.lang.Integer \
 		  java.lang.ThreadGroup
 
-.PHONY: dgalibs dgalib.clean fontconfigs fontconfigs.clean
+.PHONY: dgalibs dgalib.clean fontconfigs fontconfigs.clean generated.clean
 

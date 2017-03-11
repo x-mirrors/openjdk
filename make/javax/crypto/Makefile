@@ -128,6 +128,7 @@ ifndef OPENJDK
   endif
 endif
 
+JAVAC_MAX_WARNINGS = true
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -156,7 +157,12 @@ include $(BUILDDIR)/common/Classes.gmk
 #
 
 ifdef OPENJDK
-all: build-jar install-jar build-policy install-limited
+ifdef UNLIMITED_CRYPTO
+POLICY = install-unlimited
+else
+POLICY = install-limited
+endif
+all: build-jar install-jar build-policy $(POLICY)
 else  # OPENJDK
 ifeq ($(strip $(FILES_java)),)
 all:

@@ -27,6 +27,8 @@ BUILDDIR = ../..
 PACKAGE = java.net
 LIBRARY = net
 PRODUCT = sun
+JAVAC_MAX_WARNINGS = true
+JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -74,6 +76,7 @@ ifeq ($(PLATFORM), windows)
     FILES_export += java/net/DualStackPlainSocketImpl.java
     FILES_export += java/net/TwoStacksPlainDatagramSocketImpl.java
     FILES_export += java/net/DualStackPlainDatagramSocketImpl.java
+    FILES_export += sun/net/www/protocol/http/ntlm/NTLMAuthSequence.java
 else
     FILES_export += java/net/PlainDatagramSocketImpl.java
 endif
@@ -82,7 +85,8 @@ endif
 # Find platform specific native code
 #
 vpath %.c $(PLATFORM_SRC)/native/sun/net/dns $(PLATFORM_SRC)/native/sun/net/www/protocol/http/ntlm \
-    $(PLATFORM_SRC)/native/sun/net/sdp $(PLATFORM_SRC)/native/sun/net/spi
+    $(PLATFORM_SRC)/native/sun/net/sdp $(PLATFORM_SRC)/native/sun/net/spi \
+    $(PLATFORM_SRC)/native/sun/net
 
 #
 # Include rules
@@ -91,16 +95,23 @@ include $(BUILDDIR)/common/Mapfile-vers.gmk
 
 include $(BUILDDIR)/common/Library.gmk
 
+ifeq ($(PLATFORM), macosx)
+ifdef DONT_ENABLE_IPV6
+  OTHER_CFLAGS += -DDONT_ENABLE_IPV6
+endif
+  OTHER_LDLIBS = $(JVMLIB) -pthread
+else
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS = ws2_32.lib $(JVMLIB) \
                  secur32.lib iphlpapi.lib delayimp.lib \
                  /DELAYLOAD:secur32.dll /DELAYLOAD:iphlpapi.dll
 else
-  OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) -ldl $(JVMLIB)
+  OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) $(LIBDL) $(JVMLIB)
 endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -lpthread
 endif
+endif # PLATFORM
 
 CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressImplFactory java.net.Inet4AddressImpl java.net.Inet6AddressImpl
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -97,12 +97,12 @@ findTransportOnLoad(void *handle)
 
 /* Load transport library (directory=="" means do system search) */
 static void *
-loadTransportLibrary(char *libdir, char *name)
+loadTransportLibrary(const char *libdir, const char *name)
 {
     void *handle;
     char libname[MAXPATHLEN+2];
     char buf[MAXPATHLEN*2+100];
-    char *plibdir;
+    const char *plibdir;
 
     /* Convert libdir from UTF-8 to platform encoding */
     plibdir = NULL;
@@ -117,6 +117,9 @@ loadTransportLibrary(char *libdir, char *name)
 
     /* Construct library name (simple name or full path) */
     dbgsysBuildLibName(libname, sizeof(libname), plibdir, name);
+    if (strlen(libname) == 0) {
+        return NULL;
+    }
 
     /* dlopen (unix) / LoadLibrary (windows) the transport library */
     handle = dbgsysLoadLibrary(libname, buf, sizeof(buf));
@@ -128,12 +131,12 @@ loadTransportLibrary(char *libdir, char *name)
  * JDK 1.2 javai.c v1.61
  */
 static jdwpError
-loadTransport(char *name, jdwpTransportEnv **transportPtr)
+loadTransport(const char *name, jdwpTransportEnv **transportPtr)
 {
     JNIEnv                 *env;
     jdwpTransport_OnLoad_t  onLoad;
     void                   *handle;
-    char                   *libdir;
+    const char             *libdir;
 
     /* Make sure library name is not empty */
     if (name == NULL) {
@@ -144,7 +147,9 @@ loadTransport(char *name, jdwpTransportEnv **transportPtr)
     /* First, look in sun.boot.library.path. This should find the standard
      *  dt_socket and dt_shmem transport libraries, or any library
      *  that was delivered with the J2SE.
-     *  Note: Java property sun.boot.library.path contains a single directory.
+     *  Note: Since 6819213 fixed, Java property sun.boot.library.path can
+     *  contain multiple paths. Dll_dir is the first entry and
+     *  -Dsun.boot.library.path entries are appended.
      */
     libdir = gdata->property_sun_boot_library_path;
     if (libdir == NULL) {

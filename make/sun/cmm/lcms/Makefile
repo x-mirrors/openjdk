@@ -93,7 +93,12 @@ res.clean:
 	$(RM) $(OBJDIR)/cmm.h
 
 else
-OTHER_LDLIBS = $(LIBM) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt 
+ifeq ($(PLATFORM), macosx)
+OTHER_LDLIBS = $(LIBM) -lawt -L$(LIBDIR)/xawt
+else
+OTHER_LDLIBS = $(LIBM) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt
+endif
+CPPFLAGS += -DCMS_DONT_USE_FAST_FLOOR
 CPPFLAGS += -I$(SHARE_SRC)/native/sun/java2d \
             -I$(SHARE_SRC)/native/sun/awt/debug
 endif

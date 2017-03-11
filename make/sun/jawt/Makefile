@@ -30,11 +30,18 @@ PRODUCT = sun
 
 include $(BUILDDIR)/common/Defs.gmk
 
+# default to PLATFORM_SRC to copy export headers from
+PLATFORM_EXPORT_BASE = $(PLATFORM_SRC)
+
 #
 # Files
 #
 ifeq ($(PLATFORM), windows)
 FILES_cpp = jawt.cpp
+else ifeq ($(PLATFORM), macosx) # PLATFORM
+FILES_objc = jawt.m
+# pick up the correct export headers for Mac OS X
+PLATFORM_EXPORT_BASE = $(PLATFORM_SRC_MACOS)
 else # PLATFORM
 FILES_c = jawt.c
 endif # PLATFORM
@@ -108,6 +115,7 @@ CPPFLAGS += -I$(OPENWIN_HOME)/include \
 	    -I$(SHARE_SRC)/native/$(PKGDIR)/../dc/path \
             -I$(PLATFORM_SRC)/native/$(PKGDIR)/../jdga \
 	    $(EVENT_MODEL)
+
 #
 # Libraries to link in.
 #
@@ -128,8 +136,17 @@ ifeq ($(PLATFORM), linux)
   endif
 endif # PLATFORM
 
+ifeq ($(PLATFORM), macosx)
+vpath %.m   $(call NativeSrcDirList,,native/sun/awt)
+OTHER_LDLIBS = -llwawt -L$(LIBDIR)/lwawt -Xlinker -rpath -Xlinker @loader_path/lwawt \
+               -framework Cocoa
 endif # PLATFORM
 
+ifeq ($(PLATFORM), aix)
+  OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt
+endif # PLATFORM
+
+endif # PLATFORM
 
 #
 # Lets not remove any class files.
@@ -152,7 +169,7 @@ endif
 #
 $(INCLUDEDIR)/%.h: $(SHARE_SRC)/javavm/export/%.h
 	$(install-file)
-$(PLATFORM_INCLUDE)/%.h: $(PLATFORM_SRC)/javavm/export/%.h
+$(PLATFORM_INCLUDE)/%.h: $(PLATFORM_EXPORT_BASE)/javavm/export/%.h
 	$(install-file)
 
 

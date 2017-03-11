@@ -56,6 +56,10 @@ ifneq ($(PLATFORM), windows)
   endif
 endif
 
+ifeq ($(SYSTEM_ZLIB),true)
+  OTHER_CFLAGS += $(ZLIB_CFLAGS)
+endif
+
 #
 # Library to compile.
 #
@@ -64,6 +68,16 @@ ifeq ($(PLATFORM), solaris)
     FILES_reorder += reorder-$(ARCH)
   endif
 endif
+
+#
+# Use mapfile unconditionally (even with fastdebug).
+# JDK's internal zlib is incompatible with stock zlib, because the
+# size of struct z_stream has been changed, so internal zlib
+# implementation must not be allowed to leak outside of libzip.so,
+# else you get hard to debug failures with fastdebug jdk when user
+# native code includes stock zlib.
+#
+FILES_m = mapfile-vers
 include $(BUILDDIR)/common/Mapfile-vers.gmk
 include $(BUILDDIR)/common/Library.gmk
 
@@ -74,16 +88,24 @@ else
 CPPFLAGS += -UDEBUG 
 endif
 
-CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 CPPFLAGS += -I$(SHARE_SRC)/native/java/io
 CPPFLAGS += -I$(PLATFORM_SRC)/native/java/io
+
+ifneq ($(SYSTEM_ZLIB),true)
+CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 
 #
 # Add to ambient vpath so we pick up the library files
 #
 vpath %.c $(SHARE_SRC)/native/$(PKGDIR)/zlib-$(ZLIB_VERSION)
+endif
 
 #
 # Link to JVM library for JVM_Zip* functions
 #
+ifeq ($(SYSTEM_ZLIB),true)
+OTHER_LDLIBS = $(ZLIB_LIBS)
+else
 OTHER_LDLIBS = $(JVMLIB)
+endif
+

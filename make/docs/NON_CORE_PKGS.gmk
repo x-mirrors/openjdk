@@ -62,6 +62,8 @@ JGSS_PKGS        = com.sun.security.jgss
 
 OLD_JSSE_PKGS    = com.sun.net.ssl
 
+JDKNET_PKGS      = jdk.net
+
 HTTPSERVER_PKGS  = com.sun.net.httpserver       \
                    com.sun.net.httpserver.spi 
 
@@ -88,14 +90,23 @@ SMARTCARDIO_PKGS = javax.smartcardio
 
 SCTPAPI_PKGS     = com.sun.nio.sctp
 
+ifeq ($(PLATFORM), macosx)
+APPLE_EXT_PKGS   = com.apple.concurrent   \
+                   com.apple.eawt         \
+                   com.apple.eawt.event   \
+                   com.apple.eio
+endif
+
 # non-core packages in rt.jar
 NON_CORE_PKGS    = $(DOMAPI_PKGS) \
                    $(MGMT_PKGS) \
                    $(JAAS_PKGS) \
+                   $(JDKNET_PKGS) \
                    $(JGSS_PKGS) \
                    $(NIO_PKGS) \
                    $(OLD_JSSE_PKGS) \
                    $(HTTPSERVER_PKGS) \
                    $(SMARTCARDIO_PKGS) \
-                   $(SCTPAPI_PKGS)
+                   $(SCTPAPI_PKGS) \
+                   $(APPLE_EXT_PKGS)
 

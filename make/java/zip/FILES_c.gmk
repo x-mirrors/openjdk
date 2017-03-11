@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2002, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2014, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -29,10 +29,12 @@ FILES_c = \
 	Deflater.c \
 	Inflater.c \
 	ZipFile.c \
-	zip_util.c \
+	zip_util.c
+
+ifneq ($(SYSTEM_ZLIB),true)
+FILES_c += \
 	compress.c \
 	deflate.c \
-	gzio.c \
 	infback.c \
 	inffast.c \
 	inflate.c \
@@ -41,4 +43,5 @@ FILES_c = \
 	uncompr.c \
 	zadler32.c \
 	zcrc32.c \
-	zutil.c 
+	zutil.c
+endif

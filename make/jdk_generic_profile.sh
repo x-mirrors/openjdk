@@ -267,7 +267,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
     i386|ppc|s390|sparc|arm)
       ARCH_DATA_MODEL=32
       ;;
-    amd64|ppc64|s390x|sparcv9|ia64|alpha)
+    amd64|ppc64|ppc64le|s390x|sparcv9|ia64|alpha)
       ARCH_DATA_MODEL=64
       ;;
     *)
@@ -278,10 +278,10 @@ if [ "${ZERO_BUILD}" = true ] ; then
 
   # ZERO_ENDIANNESS is the endianness of the processor
   case "${ZERO_LIBARCH}" in
-    i386|amd64|ia64)
+    i386|amd64|ia64|ppc64le)
       ZERO_ENDIANNESS=little
       ;;
-    ppc*|s390*|sparc*|alpha)
+    ppc|ppc64|s390*|sparc*|alpha)
       ZERO_ENDIANNESS=big
       ;;
     *)
@@ -378,3 +378,22 @@ if [ "${ZERO_BUILD}" = true ] ; then
     export LLVM_LIBS
   fi
 fi
+
+# Export variables for system zlib
+# ZLIB_CFLAGS and ZLIB_LIBS tell the compiler how to compile and
+# link against zlib
+pkgconfig=$(which pkg-config 2>/dev/null)
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${ZLIB_CFLAGS}" = "" ] ; then
+    ZLIB_CFLAGS=$("${pkgconfig}" --cflags zlib)
+  fi
+  if [ "${ZLIB_LIBS}" = "" ] ; then
+    ZLIB_LIBS=$("${pkgconfig}" --libs zlib)
+  fi
+fi
+if [ "${ZLIB_LIBS}" = "" ] ; then
+    ZLIB_LIBS="-lz"
+fi
+export ZLIB_CFLAGS
+export ZLIB_LIBS
+

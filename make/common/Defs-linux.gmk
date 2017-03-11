@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1999, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,7 @@
 #   CFLAGS        (set $(OTHER_CFLAGS) instead)
 #   CPPFLAGS      (set $(OTHER_CPPFLAGS) instead)
 #   CXXFLAGS      (set $(OTHER_CXXFLAGS) instead)
-#   LDFLAGS       (set $(OTHER_LDFAGS) instead)
+#   LDFLAGS       (set $(OTHER_LDFLAGS) instead)
 #   LDLIBS        (set $(EXTRA_LIBS) instead)
 #   LDLIBS_COMMON (set $(EXTRA_LIBS) instead)
 
@@ -51,6 +51,11 @@ CC_DEPEND_FILTER = $(SED) -e 's!$*\.$(OBJECT_SUFFIX)!$(dir $@)& $(dir $@)$*.$(DE
 
 ifndef PLATFORM_SRC
   PLATFORM_SRC = $(BUILDDIR)/../src/solaris
+endif # PLATFORM_SRC
+
+# Location of the various .properties files specific to Linux platform
+ifndef PLATFORM_PROPERTIES
+  PLATFORM_PROPERTIES  = $(BUILDDIR)/../src/solaris/lib
 endif # PLATFORM_SRC
 
 # Platform specific closed sources
@@ -73,6 +78,89 @@ SCRIPT_SUFFIX =
 # CC compiler object code output directive flag value
 CC_OBJECT_OUTPUT_FLAG = -o #trailing blank required!
 CC_PROGRAM_OUTPUT_FLAG = -o #trailing blank required!
+
+# The Full Debug Symbols (FDS) default for VARIANT == OPT builds is
+# enabled with debug info files ZIP'ed to save space. For VARIANT !=
+# OPT builds, FDS is always enabled, after all a debug build without
+# debug info isn't very useful. The ZIP_DEBUGINFO_FILES option only has
+# meaning when FDS is enabled.
+#
+# If you invoke a build with FULL_DEBUG_SYMBOLS=0, then FDS will be
+# disabled for a VARIANT == OPT build.
+#
+# Note: Use of a different variable name for the FDS override option
+# versus the FDS enabled check is intentional (FULL_DEBUG_SYMBOLS
+# versus ENABLE_FULL_DEBUG_SYMBOLS). For auto build systems that pass
+# in options via environment variables, use of distinct variables
+# prevents strange behaviours. For example, in a VARIANT != OPT build,
+# the FULL_DEBUG_SYMBOLS environment variable will be 0, but the
+# ENABLE_FULL_DEBUG_SYMBOLS make variable will be 1. If the same
+# variable name is used, then different values can be picked up by
+# different parts of the build. Just to be clear, we only need two
+# variable names because the incoming option value can be overridden
+# in some situations, e.g., a VARIANT != OPT build.
+
+ifeq ($(VARIANT), OPT)
+  FULL_DEBUG_SYMBOLS ?= 1
+  ENABLE_FULL_DEBUG_SYMBOLS = $(FULL_DEBUG_SYMBOLS)
+else
+  # debug variants always get Full Debug Symbols (if available)
+  ENABLE_FULL_DEBUG_SYMBOLS = 1
+endif
+_JUNK_ := $(shell \
+  echo >&2 "INFO: ENABLE_FULL_DEBUG_SYMBOLS=$(ENABLE_FULL_DEBUG_SYMBOLS)")
+# since objcopy is optional, we set ZIP_DEBUGINFO_FILES later
+
+ifeq ($(ENABLE_FULL_DEBUG_SYMBOLS),1)
+  ifndef CROSS_COMPILE_ARCH
+    # Default OBJCOPY comes from GNU Binutils on Linux:
+    DEF_OBJCOPY=/usr/bin/objcopy
+  else
+    # Assume objcopy is part of the cross-compilation toolkit
+    DEF_OBJCOPY=$(COMPILER_PATH)/objcopy
+  endif
+  OBJCOPY=$(shell test -x $(DEF_OBJCOPY) && echo $(DEF_OBJCOPY))
+  ifneq ($(ALT_OBJCOPY),)
+    _JUNK_ := $(shell echo >&2 "INFO: ALT_OBJCOPY=$(ALT_OBJCOPY)")
+    # disable .debuginfo support by setting ALT_OBJCOPY to a non-existent path
+    OBJCOPY=$(shell test -x $(ALT_OBJCOPY) && echo $(ALT_OBJCOPY))
+  endif
+
+  # Setting ENABLE_FULL_DEBUG_SYMBOLS=1 (and OBJCOPY) above enables the
+  # JDK build to import .debuginfo or .diz files from the HotSpot build.
+  # However, adding FDS support to the JDK build will occur in phases
+  # so a different make variable (LIBRARY_SUPPORTS_FULL_DEBUG_SYMBOLS
+  # and PROGRAM_SUPPORTS_FULL_DEBUG_SYMBOLS) is used to indicate that a
+  # particular library or program supports FDS.
+
+  ifeq ($(OBJCOPY),)
+    _JUNK_ := $(shell \
+      echo >&2 "INFO: no objcopy cmd found so cannot create .debuginfo files. You may need to set ALT_OBJCOPY.")
+    ENABLE_FULL_DEBUG_SYMBOLS=0
+  else
+    _JUNK_ := $(shell \
+      echo >&2 "INFO: $(OBJCOPY) cmd found so will create .debuginfo files.")
+
+    # Library stripping policies for .debuginfo configs:
+    #   all_strip - strips everything from the library
+    #   min_strip - strips most stuff from the library; leaves minimum symbols
+    #   no_strip  - does not strip the library at all
+    #
+    # Oracle security policy requires "all_strip". A waiver was granted on
+    # 2011.09.01 that permits using "min_strip" in the Java JDK and Java JRE.
+    #
+    # Currently, STRIP_POLICY is only used when Full Debug Symbols is enabled.
+    STRIP_POLICY ?= min_strip
+
+    _JUNK_ := $(shell \
+      echo >&2 "INFO: STRIP_POLICY=$(STRIP_POLICY)")
+
+    ZIP_DEBUGINFO_FILES ?= 1
+
+    _JUNK_ := $(shell \
+      echo >&2 "INFO: ZIP_DEBUGINFO_FILES=$(ZIP_DEBUGINFO_FILES)")
+  endif
+endif
 
 #
 # Default optimization
@@ -103,12 +191,22 @@ CC_OPT          = $(CC_OPT/$(OPTIMIZATION_LEVEL))
 CFLAGS_REQUIRED_amd64   += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_i586    += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ia64    += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
-CFLAGS_REQUIRED_sparcv9 += -m64 -mcpu=v9
+CFLAGS_REQUIRED_sparcv9 += -m64 -mcpu=v9 -D_BIG_ENDIAN
 LDFLAGS_COMMON_sparcv9  += -m64 -mcpu=v9
-CFLAGS_REQUIRED_sparc   += -m32 -mcpu=v9
+CFLAGS_REQUIRED_sparc   += -m32 -mcpu=v9 -D_BIG_ENDIAN
 LDFLAGS_COMMON_sparc    += -m32 -mcpu=v9
 CFLAGS_REQUIRED_arm     += -fsigned-char -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ppc     += -fsigned-char -D_BIG_ENDIAN
+ifeq ($(ARCH),ppc64)
+  ifeq ($(OPENJDK_TARGET_CPU_ENDIAN),big)
+    CFLAGS_REQUIRED_ppc64   += -m64 -D_BIG_ENDIAN
+    LDFLAGS_COMMON_ppc64    += -m64 -L/lib64 -Wl,-melf64ppc
+  else ifeq ($(OPENJDK_TARGET_CPU_ENDIAN),little)
+    CFLAGS_REQUIRED_ppc64   += -D_LITTLE_ENDIAN -DABI_ELFv2
+  else
+    $(error Expected big/little for ARCH=ppc64, got OPENJDK_TARGET_CPU_ENDIAN=$(OPENJDK_TARGET_CPU_ENDIAN))
+  endif
+endif
 ifeq ($(ZERO_BUILD), true)
   CFLAGS_REQUIRED       =  $(ZERO_ARCHFLAG)
   ifeq ($(ZERO_ENDIANNESS), little)
@@ -118,6 +216,12 @@ ifeq ($(ZERO_BUILD), true)
 else
   CFLAGS_REQUIRED       =  $(CFLAGS_REQUIRED_$(ARCH))
   LDFLAGS_COMMON        += $(LDFLAGS_COMMON_$(ARCH))
+endif
+# GCC 6 has more aggressive dead-store elimination which causes the VM to crash
+# It also optimises away null pointer checks which are still needed.
+# We turn both of these optimisations off.
+ifeq ($(shell $(EXPR) $(CC_MAJORVER) \>= 6 ),1)
+ CFLAGS_REQUIRED += -fno-delete-null-pointer-checks -fno-lifetime-dse
 endif
 
 # If this is a --hash-style=gnu system, use --hash-style=both
@@ -170,11 +274,22 @@ ifeq ($(DEBUG_BINARIES), true)
   CFLAGS_REQUIRED += $(DEBUG_FLAG)
 endif
 
+# If Full Debug Symbols is enabled, then we want the same debug and
+# optimization flags as used by FASTDEBUG.
+#
+ifeq ($(ENABLE_FULL_DEBUG_SYMBOLS),1)
+  ifeq ($(LIBRARY_SUPPORTS_FULL_DEBUG_SYMBOLS),1)
+    ifeq ($(VARIANT), OPT)
+      CC_OPT = $(DEBUG_FLAG) $(CC_OPT/$(FASTDEBUG_OPTIMIZATION_LEVEL))
+    endif
+  endif
+endif
+
 CFLAGS_OPT      = $(CC_OPT)
 CFLAGS_DBG      = $(DEBUG_FLAG)
 CFLAGS_COMMON += $(CFLAGS_REQUIRED)
 
-CXXFLAGS_COMMON = $(GLOBAL_KPIC) -DCC_NOEX $(GCC_WARNINGS)
+CXXFLAGS_COMMON = -std=gnu++98 $(GLOBAL_KPIC) -DCC_NOEX $(GCC_WARNINGS)
 CXXFLAGS_OPT	= $(CC_OPT)
 CXXFLAGS_DBG	= $(DEBUG_FLAG)
 CXXFLAGS_COMMON += $(CFLAGS_REQUIRED)
@@ -200,6 +315,9 @@ CPPFLAGS_COMMON = $(CPP_ARCH_FLAGS) -DLINUX $(VERSION_DEFINES) \
 ifeq ($(ARCH_DATA_MODEL), 64)
 CPPFLAGS_COMMON += -D_LP64=1
 endif
+
+# turn on USE_PTHREADS
+CPPFLAGS_COMMON += -DUSE_PTHREADS
 
 CPPFLAGS_OPT    = -DNDEBUG
 CPPFLAGS_DBG    = -DDEBUG
@@ -322,10 +440,12 @@ endif
 override LIBPOSIX4               =
 override LIBSOCKET               =
 override LIBNSL                  =
+override LIBSCF                  =
 override LIBTHREAD               =
+override LIBDL                   = -ldl
 override MOOT_PRIORITIES         = true
 override NO_INTERRUPTIBLE_IO     = true
-ifeq ($(ARCH), amd64)
+ifeq ($(ARCH), $(findstring $(ARCH), amd64 ppc64))
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib64
 else
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib
@@ -359,6 +479,8 @@ JA_TARGET_ENCODINGS = UTF-8
 # Settings for the JDI - Serviceability Agent binding.
 HOTSPOT_SALIB_PATH   = $(HOTSPOT_IMPORT_PATH)/jre/lib/$(LIBARCH)
 SALIB_NAME = $(LIB_PREFIX)saproc.$(LIBRARY_SUFFIX)
+SA_DEBUGINFO_NAME = $(LIB_PREFIX)saproc.debuginfo
+SA_DIZ_NAME = $(LIB_PREFIX)saproc.diz
 
 # The JDI - Serviceability Agent binding is not currently supported
 # on Linux-ia64.

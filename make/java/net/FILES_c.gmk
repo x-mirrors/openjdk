@@ -24,23 +24,34 @@
 #
 
 FILES_c = \
-	DatagramPacket.c \
-	InetAddress.c \
-	Inet4Address.c \
-	Inet6Address.c \
-	NetworkInterface.c \
-	InetAddressImplFactory.c \
-	Inet4AddressImpl.c \
-	Inet6AddressImpl.c \
-	SocketInputStream.c \
-	SocketOutputStream.c \
-	net_util.c \
-	net_util_md.c \
-	ResolverConfigurationImpl.c \
-	DefaultProxySelector.c
+        AbstractPlainDatagramSocketImpl.c \
+        DatagramPacket.c \
+        ExtendedOptionsImpl.c \
+        InetAddress.c \
+        Inet4Address.c \
+        Inet6Address.c \
+        NetworkInterface.c \
+        InetAddressImplFactory.c \
+        Inet4AddressImpl.c \
+        Inet6AddressImpl.c \
+        SocketInputStream.c \
+        SocketOutputStream.c \
+        net_util.c \
+        net_util_md.c \
+        portconfig.c \
+        ResolverConfigurationImpl.c \
+        DefaultProxySelector.c
 
 ifeq ($(PLATFORM), linux)
     FILES_c += linux_close.c
+endif
+
+ifeq ($(PLATFORM), aix)
+    FILES_c += linux_close.c
+endif
+
+ifeq ($(PLATFORM), macosx)
+    FILES_c += bsd_close.c
 endif
 
 ifeq ($(PLATFORM), windows)

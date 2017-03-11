@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -109,6 +109,8 @@ ifndef OPENJDK
   endif
 endif
 
+JAVAC_MAX_WARNINGS=false
+JAVAC_LINT_OPTIONS=-Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -125,7 +127,6 @@ AUTO_FILES_JAVA_DIRS = $(PKGDIR)
 # Exclude the sources that get built by ../other/Makefile
 #
 AUTO_JAVA_PRUNE = \
-    ECKeyFactory.java \
     ECParameters.java \
     ECPrivateKeyImpl.java \
     ECPublicKeyImpl.java \
@@ -156,7 +157,8 @@ ifeq ($(NATIVE_ECC_AVAILABLE), true)
       $(PKGDIR)/ECDSASignature.java \
       $(PKGDIR)/ECKeyPairGenerator.java
 
-  JAVAHFLAGS += -classpath $(CLASSDESTDIR)
+  JAVAHFLAGS = -bootclasspath \
+    "$(CLASSDESTDIR)$(CLASSPATH_SEPARATOR)$(CLASSBINDIR)$(JCE_PATH)"
 
   #
   # C and C++ files
@@ -192,7 +194,7 @@ ifeq ($(NATIVE_ECC_AVAILABLE), true)
   ifeq ($(PLATFORM), windows)
     OTHER_LDLIBS += $(JVMLIB)
   else
-    OTHER_LDLIBS = -ldl $(JVMLIB) $(LIBCXX)
+    OTHER_LDLIBS = $(LIBDL) $(JVMLIB) $(LIBCXX)
   endif
 
   include $(BUILDDIR)/common/Mapfile-vers.gmk
@@ -244,9 +246,9 @@ build-jar: $(UNSIGNED_DIR)/sunec.jar
 #
 # Build sunec.jar.
 #
-$(UNSIGNED_DIR)/sunec.jar: build
+$(UNSIGNED_DIR)/sunec.jar: build $(JCE_MANIFEST_FILE)
 	$(prep-target)
-	$(BOOT_JAR_CMD) cf $@ $(JAR_DIRS) \
+	$(BOOT_JAR_CMD) cmf $(JCE_MANIFEST_FILE) $@ $(JAR_DIRS) \
 	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 

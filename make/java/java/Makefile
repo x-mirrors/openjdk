@@ -84,6 +84,7 @@ FILES_java += 	java/lang/UNIXProcess.java \
                 java/util/prefs/FileSystemPreferencesFactory.java \
 
 FILES_c    +=   UNIXProcess_md.c \
+		childproc.c \
 		UnixFileSystem_md.c \
 		canonicalize_md.c \
 		TimeZone.c \
@@ -93,6 +94,16 @@ FILES_c    +=   UNIXProcess_md.c \
 INIT += $(GENSRCDIR)/java/lang/UNIXProcess.java
 
 endif # PLATFORM
+
+ifeq ($(PLATFORM), macosx)
+FILES_c    +=   java_props_macosx.c
+FILES_java += 	java/util/prefs/MacOSXPreferences.java \
+		java/util/prefs/MacOSXPreferencesFile.java \
+		java/util/prefs/MacOSXPreferencesFactory.java
+
+CFLAGS_$(VARIANT)/java_props_md.o = -Os -x objective-c
+CFLAGS_$(VARIANT)/java_props_macosx.o = -Os -x objective-c
+endif
 
 #
 # Make sure first rule does 'all'
@@ -165,7 +176,9 @@ OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/java/util
 # Is the altzone extern documented in ctime(3C) available?
 #
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), macosx)
 HAVE_ALTZONE=true
+endif
 endif
 
 ifeq ($(HAVE_ALTZONE),true)
@@ -205,8 +218,15 @@ OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlib
 		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib \
 		       shell32.lib delayimp.lib /DELAYLOAD:shell32.dll
 else
-OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) -ldl \
+OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) $(LIBSCF) $(LIBDL) \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
+ifeq ($(PLATFORM), macosx)
+OTHER_LDLIBS += \
+        -framework CoreFoundation \
+        -framework Foundation \
+        -framework Security \
+        -framework SystemConfiguration
+endif
 endif
 
 #
@@ -243,8 +263,15 @@ ifneq ($(PLATFORM),windows)
 # UNIXProcess.java is different for solaris and linux. We need to copy
 # the correct UNIXProcess.java over to $(GENSRCDIR)/java/lang/.
 
-$(GENSRCDIR)/java/lang/UNIXProcess.java: \
+ifeq ($(PLATFORM), macosx)
+PLATFORM_UNIX_PROCESS = \
+    $(PLATFORM_SRC)/classes/java/lang/UNIXProcess.java.bsd
+else
+PLATFORM_UNIX_PROCESS = \
     $(PLATFORM_SRC)/classes/java/lang/UNIXProcess.java.$(PLATFORM)
+endif
+
+$(GENSRCDIR)/java/lang/UNIXProcess.java: $(PLATFORM_UNIX_PROCESS)
 	$(install-file)
 
 clean:: 
@@ -427,3 +454,43 @@ $(GENSRCDIR)/sun/util/CoreResourceBundleControl.java: \
 clean::
 	$(RM) $(GENSRCDIR)/sun/util/CoreResourceBundleControl.java
 
+
+HELPER_EXE = $(LIBDIR)/$(LIBARCH)/jspawnhelper
+BUILDHELPER =
+ifeq ($(PLATFORM), aix)
+    BUILDHELPER = 1
+endif
+ifeq ($(PLATFORM), solaris)
+    BUILDHELPER = 1
+endif
+ifeq ($(PLATFORM), macosx)
+    HELPER_EXE = $(LIBDIR)/jspawnhelper
+    BUILDHELPER = 1
+endif
+
+ARCHFLAG = 
+ifeq ($(ARCH_DATA_MODEL), 64)
+ifeq ($(PLATFORM), aix)
+ARCHFLAG = -q64
+else
+ARCHFLAG = -m64
+endif
+endif
+
+ifdef BUILDHELPER
+
+HELPER_EXE_FILES_c = jspawnhelper.c
+HELPER_EXE_FILES_o = $(OBJDIR)/jspawnhelper.o \
+		$(OBJDIR)/childproc.o
+
+$(HELPER_EXE): $(HELPER_EXE_FILES_o)
+	$(CC) $(ARCHFLAG) $(HELPER_EXE_FILES_o) \
+		-o $(TEMPDIR)/jspawnhelper
+	$(CP) $(TEMPDIR)/jspawnhelper $(HELPER_EXE)
+
+build: $(HELPER_EXE)
+
+clean clobber:: 
+	$(RM) $(HELPER_EXE_FILES_o) $(HELPER_EXE)
+
+endif #BUILDHELPER

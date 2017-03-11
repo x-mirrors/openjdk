@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -49,18 +49,6 @@ FILES_c = \
 	dgif_lib.c \
 	gif_err.c \
 	gifalloc.c \
-	compress.c \
-	deflate.c \
-	gzio.c \
-	infback.c \
-	inffast.c \
-	inflate.c \
-	inftrees.c \
-	trees.c \
-	uncompr.c \
-	zadler32.c \
-	zcrc32.c \
-	zutil.c \
 	jcomapi.c \
 	jdapimin.c \
 	jdapistd.c \
@@ -106,3 +94,21 @@ FILES_c = \
 	jfdctfst.c \
 	jfdctint.c
 
+ifneq ($(SYSTEM_ZLIB),true)
+  FILES_c += \
+	compress.c \
+	deflate.c \
+	gzclose.c \
+	gzlib.c \
+	gzread.c \
+	gzwrite.c \
+	infback.c \
+	inffast.c \
+	inflate.c \
+	inftrees.c \
+	trees.c \
+	uncompr.c \
+	zadler32.c \
+	zcrc32.c \
+	zutil.c
+endif

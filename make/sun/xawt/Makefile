@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -27,14 +27,19 @@ BUILDDIR = ../..
 PACKAGE = sun.awt.X11
 LIBRARY = mawt
 LIBRARY_OUTPUT = xawt
-LIB_LOCATION = $(LIBDIR)/$(LIBARCH)/xawt
 PRODUCT = sun
+
+ifeq ($(PLATFORM), macosx)
+LIB_LOCATION = $(LIBDIR)/xawt
+else
+LIB_LOCATION = $(LIBDIR)/$(LIBARCH)/xawt
+endif
 
 include $(BUILDDIR)/common/Defs.gmk
 
 GEN_DIR=$(GENSRCDIR)/sun/awt/X11
 
-CLASSES_INIT += $(TEMPDIR)/.gen.wrappers $(TEMPDIR)/.gen_icons touch.wrappers
+CLASSES_INIT += $(TEMPDIR)/.gen.wrappers touch.wrappers
 
 .PHONY: generated.clean
 
@@ -56,6 +61,18 @@ endif
 ifeq ($(PLATFORM), linux)
 LDFLAGS += -lpthread
 dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
+endif
+
+ifeq ($(PLATFORM), macosx)
+LDFLAGS += -pthread
+dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
+endif
+
+# The Xrender headers/libraries will most probaly be under /opt/freeware on AIX
+# This could/should be made configurable with ALT_XRENDER_HEADERS_PATH/ALT_XRENDER_LIB_PATH 
+ifeq ($(PLATFORM), aix)
+LDFLAGS += -L/opt/freeware/lib
+CPPFLAGS += -I/opt/freeware/include
 endif
 
 # Since this library will be living in a subdirectory below the other libraries
@@ -92,7 +109,7 @@ vpath %.c   $(SHARE_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
-OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender -ldl \
+OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender $(LIBDL) \
                    $(LDFLAGS_COMMON) $(AWT_RUNPATH) $(OTHER_LDFLAGS) -lXtst -lXi
 
 ifeq  ($(PLATFORM), solaris)
@@ -163,6 +180,10 @@ ifeq ($(PLATFORM), solaris)
  endif
 endif
 
+ifeq ($(PLATFORM), macosx)
+  CPPFLAGS += -DX11_PATH=\"$(X11_PATH)\" -DPACKAGE_PATH=\"$(PACKAGE_PATH)\"
+endif
+
 ifeq ($(MILESTONE), internal)
   CPPFLAGS += -DINTERNAL_BUILD
 endif
@@ -207,16 +228,29 @@ endif # sparcv9
 
 else # !solaris
 
+ifeq ($(PLATFORM), macosx)
+CFLAGS_32=-arch i386
+SIZERS = $(SIZER).32 $(SIZER).64
+SIZERS_C = $(SIZER_32_C) $(SIZER_64_C)
+SIZES = $(WRAPPER_GENERATOR_DIR)/sizes.32 $(WRAPPER_GENERATOR_DIR)/sizes.64
+CFLAGS_64=-arch x86_64
+else # !macosx
 ifeq ($(ARCH_DATA_MODEL), 32)
 SIZERS = $(SIZER).32
 SIZERS_C = $(SIZER_32_C)
 SIZES = $(WRAPPER_GENERATOR_DIR)/sizes.32
+ifdef CROSS_COMPILE_ARCH
+CFLAGS_32 = -m32
+endif
 else # !32
 SIZERS = $(SIZER).64
 SIZERS_C = $(SIZER_64_C)
 SIZES = $(WRAPPER_GENERATOR_DIR)/sizes.64
+ifdef CROSS_COMPILE_ARCH
+CFLAGS_64 = -m64
+endif
 endif # 32
-
+endif # !macosx
 endif # solaris
 
 # XXX Hack for 6185483 - use hard-coded sizes.
@@ -250,13 +284,15 @@ WRAPPER_GENERATOR_TEMPDIR=$(TEMPDIR)/sun/awt/X11/generator
 WRAPPER_GENERATOR_CLASS=$(WRAPPER_GENERATOR_TEMPDIR)/WrapperGenerator.class 
 XLIBTYPES=$(PLATFORM_SRC)/classes/sun/awt/X11/generator/xlibtypes.txt
 
+ifndef CROSS_COMPILE_ARCH
+SIZERS_CC = $(CC)
+else
+SIZERS_CC = $(HOST_CC)
+endif
+
 $(SIZERS): $(SIZERS_C) 
 	$(prep-target)
-ifndef CROSS_COMPILE_ARCH
-	$(CC) $(CFLAGS_$(subst .,,$(suffix $@))) $(CPPFLAGS) -o $@ $(SIZER)$(suffix $@).c
-else
-	$(HOST_CC) $(CPPFLAGS) -o $@ $(SIZER)$(suffix $@).c
-endif
+	$(SIZERS_CC) $(CFLAGS_$(subst .,,$(suffix $@))) $(CPPFLAGS) -o $@ $(SIZER)$(suffix $@).c
 
 $(WRAPPER_GENERATOR_CLASS): $(WRAPPER_GENERATOR_JAVA)
 	$(prep-target)
@@ -294,70 +330,7 @@ generated.clean:
 	$(RM) -r $(WRAPPER_GENERATOR_TEMPDIR)
 	$(RM) -r $(WRAPPER_GENERATOR_DIR)
 	$(RM) -r $(GEN_DIR)/*.java
-	$(RM) -r $(TEMPDIR)/.gen_icons
 
-ifdef OPENJDK
-    ICONS_PATH_PREFIX=$(PLATFORM_SRC)
-else
-    ICONS_PATH_PREFIX=$(CLOSED_SRC)/solaris
-endif
-
-ICONS = \
-    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon16.png \
-    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon24.png \
-    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon32.png \
-    $(ICONS_PATH_PREFIX)/classes/sun/awt/X11/java-icon48.png
-
-
-ICONPATH=$(PLATFORM_SRC)/classes/sun/awt/X11
-
-ICONS += \
-   $(ICONPATH)/security-icon-bw16.png \
-   $(ICONPATH)/security-icon-interim16.png \
-   $(ICONPATH)/security-icon-yellow16.png \
-   $(ICONPATH)/security-icon-bw24.png \
-   $(ICONPATH)/security-icon-interim24.png \
-   $(ICONPATH)/security-icon-yellow24.png \
-   $(ICONPATH)/security-icon-bw32.png \
-   $(ICONPATH)/security-icon-interim32.png \
-   $(ICONPATH)/security-icon-yellow32.png \
-   $(ICONPATH)/security-icon-bw48.png \
-   $(ICONPATH)/security-icon-interim48.png \
-   $(ICONPATH)/security-icon-yellow48.png
-
-TEMPDIR_CLASSES = $(TEMPDIR)/classes
-
-$(TEMPDIR_CLASSES)/sun/awt/X11/ToBin.class: ToBin.java
-	@$(prep-target)
-	$(BOOT_JAVAC_CMD) -d $(TEMPDIR_CLASSES) $<
-
-$(TEMPDIR)/.gen_icons: $(TEMPDIR_CLASSES)/sun/awt/X11/ToBin.class $(ICONS)
-	$(prep-target)
-	for i in $(ICONS); do \
-            filename=`basename $$i`; \
-	    name=`$(ECHO) $$filename | $(TR) '\-.' '__'`;  \
-            classname=$(GEN_DIR)/XAWTIcon32_$$name.java; \
-	    $(RM) $$classname; \
-	    $(ECHO) "package sun.awt.X11;" >> $$classname ; \
-	    $(ECHO) "public class XAWTIcon32_$$name {" >> $$classname; \
-	    $(ECHO) "public static int[] $$name = { " >> $$classname;  \
-	    $(CAT) $$i | \
-	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
-		-Djava.awt.headless=true \
-		sun.awt.X11.ToBin >> $$classname; \
-	    $(ECHO) "}; }" >> $$classname;  \
-            classname=$(GEN_DIR)/XAWTIcon64_$$name.java; \
-	    $(RM) $$classname; \
-	    $(ECHO) "package sun.awt.X11;" >> $$classname ; \
-	    $(ECHO) "public class XAWTIcon64_$$name {" >> $$classname; \
-	    $(ECHO) "public static long[] $$name = { " >> $$classname;  \
-	    $(CAT) $$i | \
-	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
-		-Djava.awt.headless=true \
-		sun.awt.X11.ToBin >> $$classname; \
-	    $(ECHO) "}; }" >> $$classname;  \
-	done
-	$(TOUCH) $@
 
 clean clobber:: generated.clean
 
