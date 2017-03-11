@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,7 @@
 
 package sun.lwawt.macosx;
 
-import java.awt.Menu;
-import java.awt.MenuBar;
-import java.awt.MenuItem;
+import java.awt.*;
 import java.awt.peer.MenuItemPeer;
 import java.awt.peer.MenuPeer;
 
@@ -39,7 +37,7 @@ public class CMenu extends CMenuItem implements MenuPeer {
 
     // This way we avoiding invocation of the setters twice
     @Override
-    protected final void initialize(MenuItem target) {
+    protected void initialize(MenuItem target) {
         setLabel(target.getLabel());
         setEnabled(target.isEnabled());
     }
@@ -59,80 +57,52 @@ public class CMenu extends CMenuItem implements MenuPeer {
     }
 
     @Override
-    long createModel() {
+    protected long createModel() {
         CMenuComponent parent = (CMenuComponent)
             LWCToolkit.targetToPeer(getTarget().getParent());
 
-        if (parent instanceof CMenu) {
-            return parent.executeGet(new CFNativeActionGet() {
-                    @Override
-                    public long run(long ptr) {
-                        return nativeCreateSubMenu(ptr);
-                    }
-                });
-        }
-        if (parent instanceof CMenuBar) {
+        if (parent instanceof CMenu ||
+            parent instanceof CPopupMenu)
+        {
+            return nativeCreateSubMenu(parent.getModel());
+        } else if (parent instanceof CMenuBar) {
             MenuBar parentContainer = (MenuBar)getTarget().getParent();
-            final boolean isHelpMenu = parentContainer.getHelpMenu() == getTarget();
-            final int insertionLocation = ((CMenuBar)parent).getNextInsertionIndex();
-            return parent.executeGet(new CFNativeActionGet() {
-                    @Override
-                    public long run(long ptr) {
-                        return nativeCreateMenu(ptr, isHelpMenu,
-                                                insertionLocation);
-                    }
-                });
+            boolean isHelpMenu = parentContainer.getHelpMenu() == getTarget();
+            int insertionLocation = ((CMenuBar)parent).getNextInsertionIndex();
+            return nativeCreateMenu(parent.getModel(),
+                                    isHelpMenu, insertionLocation);
+        } else {
+            throw new InternalError("Parent must be CMenu or CMenuBar");
         }
-        throw new InternalError("Parent must be CMenu or CMenuBar");
     }
 
     @Override
-    public final void addItem(MenuItem item) {
+    public void addItem(MenuItem item) {
         // Nothing to do here -- we added it when we created the
         // menu item's peer.
     }
 
     @Override
-    public final void delItem(final int index) {
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeDeleteItem(ptr, index);
-                }
-            });
+    public void delItem(int index) {
+        nativeDeleteItem(getModel(), index);
     }
 
     @Override
-    public final void setLabel(final String label) {
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeSetMenuTitle(ptr, label);
-                }
-            });
+    public void setLabel(String label) {
+        nativeSetMenuTitle(getModel(), label);
         super.setLabel(label);
     }
 
     // Note that addSeparator is never called directly from java.awt.Menu,
     // though it is required in the MenuPeer interface.
     @Override
-    public final void addSeparator() {
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeAddSeparator(ptr);
-                }
-            });
+    public void addSeparator() {
+        nativeAddSeparator(getModel());
     }
 
     // Used by ScreenMenuBar to get to the native menu for event handling.
-    public final long getNativeMenu() {
-        return executeGet(new CFNativeActionGet() {
-                @Override
-                public long run(long ptr) {
-                    return nativeGetNSMenu(ptr);
-                }
-            });
+    public long getNativeMenu() {
+        return nativeGetNSMenu(getModel());
     }
 
     private native long nativeCreateMenu(long parentMenuPtr,

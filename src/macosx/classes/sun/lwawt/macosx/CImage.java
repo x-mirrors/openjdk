@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,10 +29,14 @@ import java.awt.*;
 import java.awt.geom.Dimension2D;
 import java.awt.image.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 import sun.awt.image.SunWritableRaster;
 
 public class CImage extends CFRetainedResource {
     private static native long nativeCreateNSImageFromArray(int[] buffer, int w, int h);
+    private static native long nativeCreateNSImageFromArrays(int[][] buffers, int w[], int h[]);
     private static native long nativeCreateNSImageFromFileContents(String file);
     private static native long nativeCreateNSImageOfFileFromLaunchServices(String file);
     private static native long nativeCreateNSImageFromImageName(String name);
@@ -146,6 +150,40 @@ public class CImage extends CFRetainedResource {
                 return null;
             }
             return new CImage(nativeCreateNSImageFromArray(buffer, image.getWidth(null), image.getHeight(null)));
+        }
+
+        public CImage createFromImages(List<Image> images) {
+            if (images == null || images.isEmpty()) {
+                return null;
+            }
+
+            int num = images.size();
+
+            int[][] buffers = new int[num][];
+            int[] w = new int[num];
+            int[] h = new int[num];
+
+            num = 0;
+
+            for (Image img : images) {
+                buffers[num] = imageToArray(img, true);
+                if (buffers[num] == null) {
+                    // Unable to process the image
+                    continue;
+                }
+                w[num] = img.getWidth(null);
+                h[num] = img.getHeight(null);
+                num++;
+            }
+
+            if (num == 0) {
+                return null;
+            }
+
+            return new CImage(nativeCreateNSImageFromArrays(
+                        Arrays.copyOf(buffers, num),
+                        Arrays.copyOf(w, num),
+                        Arrays.copyOf(h, num)));
         }
 
         static int getSelectorAsInt(final String fromString) {

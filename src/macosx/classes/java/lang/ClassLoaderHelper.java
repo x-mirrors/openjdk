@@ -38,7 +38,7 @@ class ClassLoaderHelper {
      */
     static File mapAlternativeName(File lib) {
         String name = lib.toString();
-        int index = name.toLowerCase().lastIndexOf(".dylib");
+        int index = name.lastIndexOf('.');
         if (index < 0) {
             return null;
         }

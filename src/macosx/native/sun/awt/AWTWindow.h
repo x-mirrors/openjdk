@@ -39,7 +39,6 @@
 @private
     JNFWeakJObjectWrapper *javaPlatformWindow;
     CMenuBar *javaMenuBar;
-    NSWindow *growBoxWindow;
     NSSize javaMinSize;
     NSSize javaMaxSize;
     jint styleBits;
@@ -54,7 +53,6 @@
 
 @property (nonatomic, retain) JNFWeakJObjectWrapper *javaPlatformWindow;
 @property (nonatomic, retain) CMenuBar *javaMenuBar;
-@property (nonatomic, retain) NSWindow *growBoxWindow;
 @property (nonatomic, retain) AWTWindow *ownerWindow;
 @property (nonatomic) NSSize javaMinSize;
 @property (nonatomic) NSSize javaMaxSize;
@@ -62,13 +60,13 @@
 @property (nonatomic) BOOL isEnabled;
 @property (nonatomic) jint preFullScreenLevel;
 
+
 - (id) initWithPlatformWindow:(JNFWeakJObjectWrapper *)javaPlatformWindow
                   ownerWindow:owner
                     styleBits:(jint)styleBits
                     frameRect:(NSRect)frameRect
                   contentView:(NSView *)contentView;
 
-- (void) adjustGrowBoxWindow;
 - (BOOL) isTopmostWindowUnderMouse;
 
 // NSWindow overrides delegate methods

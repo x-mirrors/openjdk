@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,8 +41,6 @@
 #import "ThreadUtilities.h"
 #import "OSVersion.h"
 
-static const float GROW_BOX_SIZE = 12.f;
-
 #define MASK(KEY) \
     (sun_lwawt_macosx_CPlatformWindow_ ## KEY)
 
@@ -53,23 +51,6 @@ static const float GROW_BOX_SIZE = 12.f;
     BITS = VALUE ? BITS | MASK(KEY) : BITS & ~MASK(KEY)
 
 static JNF_CLASS_CACHE(jc_CPlatformWindow, "sun/lwawt/macosx/CPlatformWindow");
-
-@interface JavaResizeGrowBoxOverlayWindow : NSWindow { }
-
-@end
-
-@implementation JavaResizeGrowBoxOverlayWindow
-
-- (BOOL) accessibilityIsIgnored
-{
-    return YES;
-}
-
-- (NSArray *)accessibilityChildrenAttribute
-{
-    return nil;
-}
-@end
 
 // Cocoa windowDidBecomeKey/windowDidResignKey notifications
 // doesn't provide information about "opposite" window, so we
@@ -136,7 +117,6 @@ AWT_NS_WINDOW_IMPLEMENTATION
 @synthesize nsWindow;
 @synthesize javaPlatformWindow;
 @synthesize javaMenuBar;
-@synthesize growBoxWindow;
 @synthesize javaMinSize;
 @synthesize javaMaxSize;
 @synthesize styleBits;
@@ -183,6 +163,10 @@ AWT_NS_WINDOW_IMPLEMENTATION
         BOOL resizable = IS(bits, RESIZABLE);
         [self updateMinMaxSize:resizable];
         [self.nsWindow setShowsResizeIndicator:resizable];
+        // Zoom button should be disabled, if the window is not resizable,
+        // otherwise button should be restored to initial state.
+        BOOL zoom = resizable && IS(bits, ZOOMABLE);
+        [[self.nsWindow standardWindowButton:NSWindowZoomButton] setEnabled:zoom];
     }
 
     if (IS(mask, HAS_SHADOW)) {
@@ -217,24 +201,6 @@ AWT_NS_WINDOW_IMPLEMENTATION
         }
     }
 
-}
-
-- (BOOL) shouldShowGrowBox {
-    return isSnowLeopardOrLower() && IS(self.styleBits, RESIZABLE);
-}
-
-- (NSImage *) createGrowBoxImage {
-    NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize(GROW_BOX_SIZE, GROW_BOX_SIZE)];
-    JRSUIControlRef growBoxWidget = JRSUIControlCreate(FALSE);
-    JRSUIControlSetWidget(growBoxWidget, kJRSUI_Widget_growBoxTextured);
-    JRSUIControlSetWindowType(growBoxWidget, kJRSUI_WindowType_utility);
-    JRSUIRendererRef renderer = JRSUIRendererCreate();
-    [image lockFocus]; // sets current graphics context to that of the image
-    JRSUIControlDraw(renderer, growBoxWidget, [[NSGraphicsContext currentContext] graphicsPort], CGRectMake(0, 1, GROW_BOX_SIZE - 1, GROW_BOX_SIZE - 1));
-    [image unlockFocus];
-    JRSUIRendererRelease(renderer);
-    JRSUIControlRelease(growBoxWidget);
-    return image;
 }
 
 - (id) initWithPlatformWindow:(JNFWeakJObjectWrapper *)platformWindow
@@ -286,32 +252,6 @@ AWT_ASSERT_APPKIT_THREAD;
     self.ownerWindow = owner;
     [self setPropertiesForStyleBits:styleBits mask:MASK(_METHOD_PROP_BITMASK)];
 
-    if ([self shouldShowGrowBox]) {
-        NSImage *growBoxImage = [self createGrowBoxImage];
-        growBoxWindow = [[JavaResizeGrowBoxOverlayWindow alloc] initWithContentRect:NSMakeRect(0, 0, [growBoxImage size].width, [growBoxImage size].height) styleMask:NSBorderlessWindowMask backing:NSBackingStoreBuffered defer:NO];
-        [self.growBoxWindow setIgnoresMouseEvents:YES];
-        [self.growBoxWindow setOpaque:NO];
-        [self.growBoxWindow setBackgroundColor:[NSColor clearColor]];
-        [self.growBoxWindow setHasShadow:NO];
-        [self.growBoxWindow setReleasedWhenClosed:NO];
-
-        NSImageView *imageView = [[NSImageView alloc] initWithFrame:[self.growBoxWindow frame]];
-        [imageView setEditable:NO];
-        [imageView setAnimates:NO];
-        [imageView setAllowsCutCopyPaste:NO];
-        [self.growBoxWindow setContentView:imageView];
-        [imageView setImage:growBoxImage];
-        [growBoxImage release];
-        [imageView release];
-
-        [self.nsWindow addChildWindow:self.growBoxWindow ordered:NSWindowAbove];
-        [self adjustGrowBoxWindow];
-    } else growBoxWindow = nil;
-
-    if (IS(self.styleBits, IS_POPUP)) {
-        [self.nsWindow setCollectionBehavior:(1 << 8) /*NSWindowCollectionBehaviorFullScreenAuxiliary*/]; 
-    }
-
     return self;
 }
 
@@ -319,16 +259,14 @@ AWT_ASSERT_APPKIT_THREAD;
     return [window isKindOfClass: [AWTWindow_Panel class]] || [window isKindOfClass: [AWTWindow_Normal class]];
 }
 
-// return id for the topmost window under mouse
+// returns id for the topmost window under mouse
 + (NSInteger) getTopmostWindowUnderMouseID {
-    NSInteger result = -1;
-    
+
     NSRect screenRect = [[NSScreen mainScreen] frame];
     NSPoint nsMouseLocation = [NSEvent mouseLocation];
     CGPoint cgMouseLocation = CGPointMake(nsMouseLocation.x, screenRect.size.height - nsMouseLocation.y);
 
     NSMutableArray *windows = (NSMutableArray *)CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-
 
     for (NSDictionary *window in windows) {
         NSInteger layer = [[window objectForKey:(id)kCGWindowLayer] integerValue];
@@ -336,16 +274,14 @@ AWT_ASSERT_APPKIT_THREAD;
             CGRect rect;
             CGRectMakeWithDictionaryRepresentation((CFDictionaryRef)[window objectForKey:(id)kCGWindowBounds], &rect);
             if (CGRectContainsPoint(rect, cgMouseLocation)) {
-                result = [[window objectForKey:(id)kCGWindowNumber] integerValue];
-                break;
+                return [[window objectForKey:(id)kCGWindowNumber] integerValue];
             }
         }
     }
-    [windows release];
-    return result;
+    return -1;
 }
 
-// checks that this window is under the mouse cursor and this point is not overlapped by other windows
+// checks that this window is under the mouse cursor and this point is not overlapped by others windows
 - (BOOL) isTopmostWindowUnderMouse {
     return [self.nsWindow windowNumber] == [AWTWindow getTopmostWindowUnderMouseID];
 }
@@ -385,7 +321,8 @@ AWT_ASSERT_APPKIT_THREAD;
     [[window contentView] deliverJavaMouseEvent: mouseEvent];
 }
 
-+(void) synthesizeMouseEnteredExitedEventsForAllWindows {
++ (void) synthesizeMouseEnteredExitedEventsForAllWindows {
+
     NSInteger topmostWindowUnderMouseID = [AWTWindow getTopmostWindowUnderMouseID];
     NSArray *windows = [NSApp windows];
     NSWindow *window;
@@ -396,9 +333,9 @@ AWT_ASSERT_APPKIT_THREAD;
             BOOL isUnderMouse = ([window windowNumber] == topmostWindowUnderMouseID);
             BOOL mouseIsOver = [[window contentView] mouseIsOver];
             if (isUnderMouse && !mouseIsOver) {
-                [AWTWindow synthesizeMouseEnteredExitedEvents: window withType:NSMouseEntered];
+                [AWTWindow synthesizeMouseEnteredExitedEvents:window withType:NSMouseEntered];
             } else if (!isUnderMouse && mouseIsOver) {
-                [AWTWindow synthesizeMouseEnteredExitedEvents: window withType:NSMouseExited];
+                [AWTWindow synthesizeMouseEnteredExitedEvents:window withType:NSMouseExited];
             }
         }
     }
@@ -416,7 +353,6 @@ AWT_ASSERT_APPKIT_THREAD;
 
     JNIEnv *env = [ThreadUtilities getJNIEnvUncached];
     [self.javaPlatformWindow setJObject:nil withEnv:env];
-    self.growBoxWindow = nil;
 
     self.nsWindow = nil;
     self.ownerWindow = nil;
@@ -431,6 +367,22 @@ AWT_ASSERT_APPKIT_THREAD;
 
 - (BOOL) canBecomeMainWindow {
 AWT_ASSERT_APPKIT_THREAD;
+    if (!self.isEnabled) {
+        // Native system can bring up the NSWindow to
+        // the top even if the window is not main.
+        // We should bring up the modal dialog manually
+        [AWTToolkit eventCountPlusPlus];
+
+        JNIEnv *env = [ThreadUtilities getJNIEnv];
+        jobject platformWindow = [self.javaPlatformWindow jObjectWithEnv:env];
+        if (platformWindow != NULL) {
+            static JNF_MEMBER_CACHE(jm_checkBlockingAndOrder, jc_CPlatformWindow,
+                                    "checkBlockingAndOrder", "()Z");
+            JNFCallBooleanMethod(env, platformWindow, jm_checkBlockingAndOrder);
+            (*env)->DeleteLocalRef(env, platformWindow);
+        }
+    }
+
     return self.isEnabled && IS(self.styleBits, SHOULD_BECOME_MAIN);
 }
 
@@ -503,14 +455,6 @@ AWT_ASSERT_APPKIT_THREAD;
 
 // NSWindowDelegate methods
 
-- (void) adjustGrowBoxWindow {
-    if (self.growBoxWindow != nil) {
-        NSRect parentRect = [self.nsWindow frame];
-        parentRect.origin.x += (parentRect.size.width - [self.growBoxWindow frame].size.width);
-        [self.growBoxWindow setFrameOrigin:parentRect.origin];
-    }
-}
-
 - (void) _deliverMoveResizeEvent {
 AWT_ASSERT_APPKIT_THREAD;
 
@@ -524,8 +468,6 @@ AWT_ASSERT_APPKIT_THREAD;
         // TODO: create generic AWT assert
     }
 
-    [self adjustGrowBoxWindow];
-
     NSRect frame = ConvertNSScreenRect(env, [self.nsWindow frame]);
 
     static JNF_MEMBER_CACHE(jm_deliverMoveResizeEvent, jc_CPlatformWindow, "deliverMoveResizeEvent", "(IIIIZ)V");
@@ -536,6 +478,8 @@ AWT_ASSERT_APPKIT_THREAD;
                       (jint)frame.size.height,
                       (jboolean)[self.nsWindow inLiveResize]);
     (*env)->DeleteLocalRef(env, platformWindow);
+
+    [AWTWindow synthesizeMouseEnteredExitedEventsForAllWindows];
 }
 
 - (void)windowDidMove:(NSNotification *)notification {
@@ -556,20 +500,6 @@ AWT_ASSERT_APPKIT_THREAD;
     [AWTToolkit eventCountPlusPlus];
     // TODO: don't see this callback invoked anytime so we track
     // window exposing in _setVisible:(BOOL)
-}
-
-- (BOOL)windowShouldZoom:(NSWindow *)window toFrame:(NSRect)proposedFrame {
-AWT_ASSERT_APPKIT_THREAD;
-
-    [AWTToolkit eventCountPlusPlus];
-    JNIEnv *env = [ThreadUtilities getJNIEnv];
-    jobject platformWindow = [self.javaPlatformWindow jObjectWithEnv:env];
-    if (platformWindow != NULL) {
-        static JNF_MEMBER_CACHE(jm_deliverZoom, jc_CPlatformWindow, "deliverZoom", "(Z)V");
-        JNFCallVoidMethod(env, platformWindow, jm_deliverZoom, ![window isZoomed]);
-        (*env)->DeleteLocalRef(env, platformWindow);
-    }
-    return YES;
 }
 
 - (void) _deliverIconify:(BOOL)iconify {
@@ -733,6 +663,7 @@ AWT_ASSERT_APPKIT_THREAD;
         [self _notifyFullScreenOp:com_apple_eawt_FullScreenHandler_FULLSCREEN_DID_ENTER withEnv:env];
         (*env)->DeleteLocalRef(env, platformWindow);
     }
+    [AWTWindow synthesizeMouseEnteredExitedEventsForAllWindows];
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
@@ -755,6 +686,7 @@ AWT_ASSERT_APPKIT_THREAD;
         [self _notifyFullScreenOp:com_apple_eawt_FullScreenHandler_FULLSCREEN_DID_EXIT withEnv:env];
         (*env)->DeleteLocalRef(env, platformWindow);
     }
+    [AWTWindow synthesizeMouseEnteredExitedEventsForAllWindows];
 }
 
 - (void)sendEvent:(NSEvent *)event {
@@ -790,11 +722,6 @@ AWT_ASSERT_APPKIT_THREAD;
         // Speculative estimation: 80 - enough for window decorations controls
         minWidth += left + right + 80;
         minHeight += top + bottom;
-    }
-
-    if ([self shouldShowGrowBox]) {
-        minWidth = MAX(minWidth, GROW_BOX_SIZE);
-        minHeight += GROW_BOX_SIZE;
     }
 
     minWidth = MAX(1.f, minWidth);
@@ -864,7 +791,7 @@ JNF_COCOA_ENTER(env);
                                                contentView:contentView];
         // the window is released is CPlatformWindow.nativeDispose()
 
-        if (window) [window.nsWindow retain];
+        if (window) CFRetain(window.nsWindow);
     }];
 
 JNF_COCOA_EXIT(env);
@@ -898,7 +825,7 @@ JNF_COCOA_ENTER(env);
 
         // calls methods on NSWindow to change other properties, based on the mask
         if (mask & MASK(_METHOD_PROP_BITMASK)) {
-            [window setPropertiesForStyleBits:bits mask:mask];
+            [window setPropertiesForStyleBits:newBits mask:mask];
         }
 
         window.styleBits = newBits;
@@ -1008,8 +935,6 @@ JNF_COCOA_ENTER(env);
         // ensure we repaint the whole window after the resize operation
         // (this will also re-enable screen updates, which were disabled above)
         // TODO: send PaintEvent
-
-        [AWTWindow synthesizeMouseEnteredExitedEventsForAllWindows];
     }];
 
 JNF_COCOA_EXIT(env);
@@ -1188,7 +1113,7 @@ JNF_COCOA_EXIT(env);
 
 /*
  * Class:     sun_lwawt_macosx_CPlatformWindow
- * Method:    nativeGetTopMostWindowUnderMouse
+ * Method:    nativeGetTopmostPlatformWindowUnderMouse
  * Signature: (J)V
  */
 JNIEXPORT jobject
@@ -1248,61 +1173,6 @@ JNF_COCOA_ENTER(env);
 JNF_COCOA_EXIT(env);
 }
 
-JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeEnterFullScreenMode
-(JNIEnv *env, jclass clazz, jlong windowPtr)
-{
-JNF_COCOA_ENTER(env);
-
-    NSWindow *nsWindow = OBJC(windowPtr);
-    [ThreadUtilities performOnMainThreadWaiting:NO block:^(){
-        AWTWindow *window = (AWTWindow*)[nsWindow delegate];
-        NSNumber* screenID = [AWTWindow getNSWindowDisplayID_AppKitThread: nsWindow];
-        CGDirectDisplayID aID = [screenID intValue];
-
-        if (CGDisplayCapture(aID) == kCGErrorSuccess) {
-            // remove window decoration
-            NSUInteger styleMask = [AWTWindow styleMaskForStyleBits:window.styleBits];
-            [nsWindow setStyleMask:(styleMask & ~NSTitledWindowMask) | NSBorderlessWindowMask];
-
-            int shieldLevel = CGShieldingWindowLevel();
-            window.preFullScreenLevel = [nsWindow level];
-            [nsWindow setLevel: shieldLevel];
-
-            NSRect screenRect = [[nsWindow screen] frame];
-            [nsWindow setFrame:screenRect display:YES];
-        } else {
-            [JNFException raise:env as:kRuntimeException reason:"Failed to enter full screen."];            
-        }
-    }];
-
-JNF_COCOA_EXIT(env);
-}
-
-JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeExitFullScreenMode
-(JNIEnv *env, jclass clazz, jlong windowPtr)
-{
-JNF_COCOA_ENTER(env);
-
-    NSWindow *nsWindow = OBJC(windowPtr);
-    [ThreadUtilities performOnMainThreadWaiting:NO block:^(){
-        AWTWindow *window = (AWTWindow*)[nsWindow delegate];
-        NSNumber* screenID = [AWTWindow getNSWindowDisplayID_AppKitThread: nsWindow];
-        CGDirectDisplayID aID = [screenID intValue];
-
-        if (CGDisplayRelease(aID) == kCGErrorSuccess) {
-            NSUInteger styleMask = [AWTWindow styleMaskForStyleBits:window.styleBits];
-            [nsWindow setStyleMask:styleMask]; 
-            [nsWindow setLevel: window.preFullScreenLevel];
-
-            // GraphicsDevice takes care of restoring pre full screen bounds
-        } else {
-            [JNFException raise:env as:kRuntimeException reason:"Failed to exit full screen."];
-        }
-    }];
-
-JNF_COCOA_EXIT(env);
-}
-
 JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeSetEnabled
 (JNIEnv *env, jclass clazz, jlong windowPtr, jboolean isEnabled)
 {
@@ -1338,6 +1208,65 @@ JNF_COCOA_ENTER(env);
         [nsWindow setDelegate: nil];
 
         [window release];
+    }];
+
+JNF_COCOA_EXIT(env);
+}
+
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeEnterFullScreenMode
+(JNIEnv *env, jclass clazz, jlong windowPtr)
+{
+JNF_COCOA_ENTER(env);
+
+    NSWindow *nsWindow = OBJC(windowPtr);
+    [ThreadUtilities performOnMainThreadWaiting:NO block:^(){
+        AWTWindow *window = (AWTWindow*)[nsWindow delegate];
+        NSNumber* screenID = [AWTWindow getNSWindowDisplayID_AppKitThread: nsWindow];
+        CGDirectDisplayID aID = [screenID intValue];
+
+        if (CGDisplayCapture(aID) == kCGErrorSuccess) {
+            // remove window decoration
+            NSUInteger styleMask = [AWTWindow styleMaskForStyleBits:window.styleBits];
+            [nsWindow setStyleMask:(styleMask & ~NSTitledWindowMask) | NSBorderlessWindowMask];
+
+            int shieldLevel = CGShieldingWindowLevel();
+            window.preFullScreenLevel = [nsWindow level];
+            [nsWindow setLevel: shieldLevel];
+
+            NSRect screenRect = [[nsWindow screen] frame];
+            [nsWindow setFrame:screenRect display:YES];
+        } else {
+            [JNFException raise:[ThreadUtilities getJNIEnv]
+                             as:kRuntimeException
+                         reason:"Failed to enter full screen."];
+        }
+    }];
+
+JNF_COCOA_EXIT(env);
+}
+
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeExitFullScreenMode
+(JNIEnv *env, jclass clazz, jlong windowPtr)
+{
+JNF_COCOA_ENTER(env);
+
+    NSWindow *nsWindow = OBJC(windowPtr);
+    [ThreadUtilities performOnMainThreadWaiting:NO block:^(){
+        AWTWindow *window = (AWTWindow*)[nsWindow delegate];
+        NSNumber* screenID = [AWTWindow getNSWindowDisplayID_AppKitThread: nsWindow];
+        CGDirectDisplayID aID = [screenID intValue];
+
+        if (CGDisplayRelease(aID) == kCGErrorSuccess) {
+            NSUInteger styleMask = [AWTWindow styleMaskForStyleBits:window.styleBits];
+            [nsWindow setStyleMask:styleMask]; 
+            [nsWindow setLevel: window.preFullScreenLevel];
+
+            // GraphicsDevice takes care of restoring pre full screen bounds
+        } else {
+            [JNFException raise:[ThreadUtilities getJNIEnv]
+                             as:kRuntimeException
+                         reason:"Failed to exit full screen."];
+        }
     }];
 
 JNF_COCOA_EXIT(env);

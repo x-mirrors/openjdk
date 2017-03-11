@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -103,7 +103,13 @@ public final class KeychainStore extends KeyStoreSpi {
     private static final int SALT_LEN = 20;
 
     static {
-        java.security.AccessController.doPrivileged((PrivilegedAction<?>)new sun.security.action.LoadLibraryAction("osx"));
+        AccessController.doPrivileged(
+            new PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("osx");
+                    return null;
+                }
+            });
         try {
             PKCS8ShroudedKeyBag_OID = new ObjectIdentifier(keyBag);
             pbeWithSHAAnd3KeyTripleDESCBC_OID = new ObjectIdentifier(pbeWithSHAAnd3KeyTripleDESCBC);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,13 +26,12 @@
 package sun.lwawt.macosx;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.VolatileImage;
 
 import sun.awt.CGraphicsConfig;
 import sun.awt.CGraphicsEnvironment;
 import sun.lwawt.LWWindowPeer;
+import sun.lwawt.macosx.event.NSEvent;
 
 import sun.java2d.SurfaceData;
 import sun.java2d.opengl.CGLLayer;
@@ -55,8 +54,7 @@ public class CPlatformView extends CFRetainedResource {
     }
 
     public void initialize(LWWindowPeer peer, CPlatformResponder responder) {
-        this.peer = peer;
-        this.responder = responder;
+        initializeBase(peer, responder);
 
         if (!LWCToolkit.getSunAwtDisableCALayers()) {
             this.windowLayer = createCGLayer();
@@ -68,9 +66,14 @@ public class CPlatformView extends CFRetainedResource {
         return new CGLLayer(peer);
     }
 
+    protected void initializeBase(LWWindowPeer peer, CPlatformResponder responder) {
+        this.peer = peer;
+        this.responder = responder;
+    }
+
     public long getAWTView() {
         return ptr;
-        }
+    }
 
     public boolean isOpaque() {
         return !peer.isTranslucent();
@@ -100,26 +103,6 @@ public class CPlatformView extends CFRetainedResource {
     // ----------------------------------------------------------------------
     // PAINTING METHODS
     // ----------------------------------------------------------------------
-
-    public void drawImageOnPeer(VolatileImage xBackBuffer, int x1, int y1, int x2, int y2) {
-        Graphics g = peer.getGraphics();
-        try {
-            g.drawImage(xBackBuffer, x1, y1, x2, y2, x1, y1, x2, y2, null);
-        } finally {
-            g.dispose();
-        }
-    }
-
-    public Image createBackBuffer() {
-        Rectangle r = getBounds();
-        Image im = null;
-        if (!r.isEmpty()) {
-            int transparency = (isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT);
-            im = getGraphicsConfiguration().createCompatibleImage(r.width, r.height, transparency);
-        }
-        return im;
-    }
-
     public SurfaceData replaceSurfaceData() {
         if (!LWCToolkit.getSunAwtDisableCALayers()) {
             surfaceData = windowLayer.replaceSurfaceData();
@@ -200,7 +183,7 @@ public class CPlatformView extends CFRetainedResource {
      * In normal mode this method is never called.
      */
     private void deliverResize(int x, int y, int w, int h) {
-        responder.handleReshapeEvent(x, y, w, h);
+        peer.notifyReshape(x, y, w, h);
     }
 
 
@@ -210,8 +193,7 @@ public class CPlatformView extends CFRetainedResource {
 
         if (event.getType() == CocoaConstants.NSScrollWheel) {
             responder.handleScrollEvent(x, y, event.getModifierFlags(),
-                                        event.getScrollDeltaX(), event.getScrollDeltaY(),
-                                        event.getScrollPhase());
+                                        event.getScrollDeltaX(), event.getScrollDeltaY());
         } else {
             responder.handleMouseEvent(event.getType(), event.getModifierFlags(), event.getButtonNumber(),
                                        event.getClickCount(), x, y, event.getAbsX(), event.getAbsY());
@@ -219,7 +201,7 @@ public class CPlatformView extends CFRetainedResource {
     }
 
     private void deliverKeyEvent(NSEvent event) {
-        responder.handleKeyEvent(event.getType(), event.getModifierFlags(), event.getCharacters(),
+        responder.handleKeyEvent(event.getType(), event.getModifierFlags(),
                                  event.getCharactersIgnoringModifiers(), event.getKeyCode(), true, false);
     }
 
@@ -228,7 +210,6 @@ public class CPlatformView extends CFRetainedResource {
      * NSView mode. See NSView.drawRect().
      */
     private void deliverWindowDidExposeEvent() {
-        Rectangle r = getBounds();
-        responder.handleWindowDidExposeEvent(new Rectangle(r.width, r.height));
+        peer.notifyExpose(peer.getSize());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -226,7 +226,7 @@ public class AquaFileChooserUI extends FileChooserUI {
         // Exist in basic.properties (though we might want to override)
         fileDescriptionText = UIManager.getString("FileChooser.fileDescriptionText");
         directoryDescriptionText = UIManager.getString("FileChooser.directoryDescriptionText");
-        newFolderErrorText = getString("FileChooser.newFolderErrorText", "Error occured during folder creation");
+        newFolderErrorText = getString("FileChooser.newFolderErrorText", "Error occurred during folder creation");
 
         saveButtonText = UIManager.getString("FileChooser.saveButtonText");
         openButtonText = UIManager.getString("FileChooser.openButtonText");
@@ -379,6 +379,19 @@ public class AquaFileChooserUI extends FileChooserUI {
                         }
                     }
                     updateButtonState(getFileChooser());
+                } else if (prop.equals(JFileChooser.SELECTED_FILES_CHANGED_PROPERTY)) {
+                    JFileChooser fileChooser = getFileChooser();
+                    if (!fileChooser.isDirectorySelectionEnabled()) {
+                        final File[] files = (File[]) e.getNewValue();
+                        if (files != null) {
+                            for (int selectedRow : fFileList.getSelectedRows()) {
+                                File file = (File) fFileList.getValueAt(selectedRow, 0);
+                                if (fileChooser.isTraversable(file)) {
+                                    fFileList.removeSelectedIndex(selectedRow);
+                                }
+                            }
+                        }
+                    }
                 } else if (prop.equals(JFileChooser.DIRECTORY_CHANGED_PROPERTY)) {
                     fFileList.clearSelection();
                     final File currentDirectory = getFileChooser().getCurrentDirectory();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1856,7 +1856,10 @@ public class AquaTabbedPaneCopyFromBasicUI extends TabbedPaneUI implements Swing
         // If we're not valid that means we will shortly be validated and
         // painted, which means we don't have to do anything here.
         if (!isRunsDirty && index >= 0 && index < tabPane.getTabCount()) {
-            tabPane.repaint(getTabBounds(tabPane, index));
+            Rectangle rect = getTabBounds(tabPane, index);
+            if (rect != null) {
+                tabPane.repaint(rect);
+            }
         }
     }
 

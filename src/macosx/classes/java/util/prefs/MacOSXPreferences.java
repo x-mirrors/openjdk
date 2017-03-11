@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -139,18 +139,21 @@ class MacOSXPreferences extends AbstractPreferences {
 
 
     // AbstractPreferences implementation
+    @Override
     protected void putSpi(String key, String value)
     {
         file.addKeyToNode(path, key, value);
     }
 
     // AbstractPreferences implementation
+    @Override
     protected String getSpi(String key)
     {
         return file.getKeyFromNode(path, key);
     }
 
     // AbstractPreferences implementation
+    @Override
     protected void removeSpi(String key)
     {
         Objects.requireNonNull(key, "Specified key cannot be null");
@@ -159,8 +162,9 @@ class MacOSXPreferences extends AbstractPreferences {
 
 
     // AbstractPreferences implementation
+    @Override
     protected void removeNodeSpi()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         // Disallow flush or sync between these two operations
         // (they may be manipulating two different files)
@@ -178,8 +182,9 @@ class MacOSXPreferences extends AbstractPreferences {
 
 
     // AbstractPreferences implementation
+    @Override
     protected String[] childrenNamesSpi()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         String[] result = file.getChildrenForNode(path);
         if (result == null) throw new BackingStoreException("Couldn't get list of children for node '" + path + "'");
@@ -187,8 +192,9 @@ class MacOSXPreferences extends AbstractPreferences {
     }
 
     // AbstractPreferences implementation
+    @Override
     protected String[] keysSpi()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         String[] result = file.getKeysForNode(path);
         if (result == null) throw new BackingStoreException("Couldn't get list of keys for node '" + path + "'");
@@ -196,6 +202,7 @@ class MacOSXPreferences extends AbstractPreferences {
     }
 
     // AbstractPreferences implementation
+    @Override
     protected AbstractPreferences childSpi(String name)
     {
         // Add to parent's child list here and disallow sync
@@ -207,8 +214,9 @@ class MacOSXPreferences extends AbstractPreferences {
     }
 
     // AbstractPreferences override
+    @Override
     public void flush()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         // Flush should *not* check for removal, unlike sync, but should
         // prevent simultaneous removal.
@@ -226,15 +234,17 @@ class MacOSXPreferences extends AbstractPreferences {
     }
 
     // AbstractPreferences implementation
+    @Override
     protected void flushSpi()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         // nothing here - overridden flush() doesn't call this
     }
 
     // AbstractPreferences override
+    @Override
     public void sync()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         synchronized(lock) {
             if (isRemoved())
@@ -253,8 +263,9 @@ class MacOSXPreferences extends AbstractPreferences {
     }
 
     // AbstractPreferences implementation
+    @Override
     protected void syncSpi()
-        throws BackingStoreException
+    throws BackingStoreException
     {
         // nothing here - overridden sync() doesn't call this
     }

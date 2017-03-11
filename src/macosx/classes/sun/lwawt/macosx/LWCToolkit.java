@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,7 +46,6 @@ import sun.security.action.GetBooleanAction;
 
 import sun.util.CoreResourceBundleControl;
 
-
 class NamedCursor extends Cursor {
     NamedCursor(String name) {
         super(name);
@@ -70,6 +69,7 @@ public final class LWCToolkit extends LWToolkit {
 
     static {
         System.err.flush();
+
         ResourceBundle platformResources = java.security.AccessController.doPrivileged(
                 new java.security.PrivilegedAction<ResourceBundle>() {
             public ResourceBundle run() {
@@ -84,6 +84,7 @@ public final class LWCToolkit extends LWToolkit {
 
                 System.loadLibrary("awt");
                 System.loadLibrary("fontmanager");
+
                 return platformResources;
             }
         });
@@ -93,7 +94,19 @@ public final class LWCToolkit extends LWToolkit {
         if (!GraphicsEnvironment.isHeadless()) {
             initIDs();
         }
+        inAWT = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+            @Override
+            public Boolean run() {
+                return !Boolean.parseBoolean(System.getProperty("javafx.embed.singleThread", "false"));
+            }
+        });
     }
+
+    /*
+     * If true  we operate in normal mode and nested runloop is executed in JavaRunLoopMode
+     * If false we operate in singleThreaded FX/AWT interop mode and nested loop uses NSDefaultRunLoopMode
+     */
+    private static final boolean inAWT;
 
     public LWCToolkit() {
         SunToolkit.setDataTransfererClassName("sun.lwawt.macosx.CDataTransferer");
@@ -143,19 +156,25 @@ public final class LWCToolkit extends LWToolkit {
         return new AppleSpecificColor(color);
     }
 
-    // This is only called from native code.
     static void systemColorsChanged() {
         // This is only called from native code.
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 AccessController.doPrivileged (new PrivilegedAction<Object>() {
                     public Object run() {
-                        AWTAccessor.getSystemColorAccessor().updateSystemColors();
+                        try {
+                            final Method updateColorsMethod = SystemColor.class.getDeclaredMethod("updateSystemColors", new Class[0]);
+                            updateColorsMethod.setAccessible(true);
+                            updateColorsMethod.invoke(null, new Object[0]);
+                        } catch (final Throwable e) {
+                            e.printStackTrace();
+                            // swallow this if something goes horribly wrong
+                        }
                         return null;
                     }
                 });
             }
-        });
+           });
     }
 
     public static LWCToolkit getLWCToolkit() {
@@ -168,6 +187,8 @@ public final class LWCToolkit extends LWToolkit {
             return new CPlatformEmbeddedFrame();
         } else if (peerType == PeerType.VIEW_EMBEDDED_FRAME) {
             return new CViewPlatformEmbeddedFrame();
+        } else if (peerType == PeerType.LW_FRAME) {
+            return new CPlatformLWWindow();
         } else {
             assert (peerType == PeerType.SIMPLEWINDOW || peerType == PeerType.DIALOG || peerType == PeerType.FRAME);
             return new CPlatformWindow();
@@ -182,6 +203,11 @@ public final class LWCToolkit extends LWToolkit {
     @Override
     protected PlatformComponent createPlatformComponent() {
         return new CPlatformComponent();
+    }
+
+    @Override
+    protected PlatformComponent createLwPlatformComponent() {
+        return new CPlatformLWComponent();
     }
 
     @Override
@@ -418,15 +444,8 @@ public final class LWCToolkit extends LWToolkit {
     }
 
     // Intended to be called from the LWCToolkit.m only.
-    private static void installToolkitThreadInJava() {
+    private static void installToolkitThreadNameInJava() {
         Thread.currentThread().setName(CThreading.APPKIT_THREAD_NAME);
-        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            @Override
-            public Void run() {
-                Thread.currentThread().setContextClassLoader(null);
-                return null;
-            }
-        });
     }
 
     @Override
@@ -532,15 +551,12 @@ public final class LWCToolkit extends LWToolkit {
     public static void invokeAndWait(Runnable runnable, Component component) throws InvocationTargetException {
         final long mediator = createAWTRunLoopMediator();
 
-        InvocationEvent invocationEvent = AWTAccessor.getInvocationEventAccessor()
-                .createEvent(component != null ? component : Toolkit.getDefaultToolkit(),
+        InvocationEvent invocationEvent =
+                new InvocationEvent(component != null ? component : Toolkit.getDefaultToolkit(),
                         runnable,
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mediator != 0) {
-                                    stopAWTRunLoop(mediator);
-                                }
+                        () -> {
+                            if (mediator != 0) {
+                                stopAWTRunLoop(mediator);
                             }
                         },
                         true);
@@ -550,7 +566,7 @@ public final class LWCToolkit extends LWToolkit {
             SunToolkit.postEvent(appContext, invocationEvent);
 
             // 3746956 - flush events from PostEventQueue to prevent them from getting stuck and causing a deadlock
-            sun.awt.SunToolkitSubclass.flushPendingEvents(appContext);
+            SunToolkit.flushPendingEvents(appContext);
         } else {
             // This should be the equivalent to EventQueue.invokeAndWait
             ((LWCToolkit)Toolkit.getDefaultToolkit()).getSystemEventQueueForInvokeAndWait().postEvent(invocationEvent);
@@ -576,7 +592,7 @@ public final class LWCToolkit extends LWToolkit {
             SunToolkit.postEvent(appContext, invocationEvent);
 
             // 3746956 - flush events from PostEventQueue to prevent them from getting stuck and causing a deadlock
-            sun.awt.SunToolkitSubclass.flushPendingEvents(appContext);
+            SunToolkit.flushPendingEvents(appContext);
         } else {
             // This should be the equivalent to EventQueue.invokeAndWait
             ((LWCToolkit)Toolkit.getDefaultToolkit()).getSystemEventQueueForInvokeAndWait().postEvent(invocationEvent);
@@ -692,12 +708,7 @@ public final class LWCToolkit extends LWToolkit {
     /*
      * Returns true if the application (one of its windows) owns keyboard focus.
      */
-    native boolean isApplicationActive();
-
-    /*
-     * Activates application ignoring other apps.
-     */
-    public native void activateApplicationIgnoringOtherApps();
+    public native boolean isApplicationActive();
 
     /************************
      * Native methods section
@@ -715,7 +726,10 @@ public final class LWCToolkit extends LWToolkit {
      *
      *                      if false - all events come after exit form the nested loop
      */
-    static native void doAWTRunLoop(long mediator, boolean processEvents);
+    static void doAWTRunLoop(long mediator, boolean processEvents) {
+        doAWTRunLoopImpl(mediator, processEvents, inAWT);
+    }
+    static private native void doAWTRunLoopImpl(long mediator, boolean processEvents, boolean inAWT);
     static native void stopAWTRunLoop(long mediator);
 
     private native boolean nativeSyncQueue(long timeout);

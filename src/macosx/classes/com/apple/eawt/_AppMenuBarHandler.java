@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@ import javax.swing.*;
 import javax.swing.plaf.MenuBarUI;
 
 import com.apple.laf.ScreenMenuBar;
-import sun.lwawt.macosx.CFRetainedResource;
 import sun.lwawt.macosx.CMenuBar;
 
 import com.apple.laf.AquaMenuBarUI;
@@ -122,12 +121,7 @@ class _AppMenuBarHandler {
         }
 
         // grab the pointer to the CMenuBar, and retain it in native
-        ((CMenuBar) peer).execute(new CFRetainedResource.CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    _AppMenuBarHandler.nativeSetDefaultMenuBar(ptr);
-                }
-            });
+        nativeSetDefaultMenuBar(((CMenuBar)peer).getModel());
     }
 
     void setAboutMenuItemVisible(final boolean present) {

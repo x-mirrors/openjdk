@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 import com.apple.internal.jobjc.generator.FunctionGenerator;
 import com.apple.internal.jobjc.generator.Utils;
@@ -130,7 +131,11 @@ public class FrameworkClassFile extends GeneratedClassFile {
             }
         }
 
-        for (final Clazz clazz : framework.classes) {
+        /**
+         * Order classes to get stable output
+         */
+        TreeSet<Clazz> sortedClasses = new TreeSet<Clazz>(framework.classes);
+        for (final Clazz clazz : sortedClasses) {
             final String classClassName = clazz.name + "Class";
             out.println(JavaLang.makeSingleton("_" + classClassName, clazz.name, classClassName, "getRuntime()"));
         }

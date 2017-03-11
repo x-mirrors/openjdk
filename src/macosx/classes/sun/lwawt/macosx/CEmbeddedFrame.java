@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package sun.lwawt.macosx;
 import sun.lwawt.LWToolkit;
 import sun.lwawt.LWWindowPeer;
 import sun.lwawt.macosx.CocoaConstants;
+import sun.lwawt.macosx.event.NSEvent;
 
 import sun.awt.EmbeddedFrame;
 
@@ -38,8 +39,7 @@ public class CEmbeddedFrame extends EmbeddedFrame {
 
     private CPlatformResponder responder;
     private static final Object classLock = new Object();
-    private static volatile CEmbeddedFrame globalFocusedWindow;
-    private CEmbeddedFrame browserWindowFocusedApplet;
+    private static volatile CEmbeddedFrame focusedWindow;
     private boolean parentWindowActive = true;
 
     public CEmbeddedFrame() {
@@ -92,20 +92,13 @@ public class CEmbeddedFrame extends EmbeddedFrame {
         int x = (int)pluginX;
         int y = (int)pluginY;
 
-        responder.handleScrollEvent(x, y, modifierFlags, deltaX, deltaY, NSEvent.SCROLL_PHASE_UNSUPPORTED);
+        responder.handleScrollEvent(x, y, modifierFlags, deltaX, deltaY);
     }
 
     public void handleKeyEvent(int eventType, int modifierFlags, String characters,
                                String charsIgnoringMods, boolean isRepeat, short keyCode,
                                boolean needsKeyTyped) {
-        responder.handleKeyEvent(eventType, modifierFlags, characters, charsIgnoringMods,
-                keyCode, needsKeyTyped, isRepeat);
-    }
-
-    // REMIND: delete this method once 'deploy' changes for 7156194 is pushed
-    public void handleKeyEvent(int eventType, int modifierFlags, String characters,
-                               String charsIgnoringMods, boolean isRepeat, short keyCode) {
-        handleKeyEvent(eventType, modifierFlags, characters, charsIgnoringMods, isRepeat, keyCode, true);
+        responder.handleKeyEvent(eventType, modifierFlags, charsIgnoringMods, keyCode, needsKeyTyped, isRepeat);
     }
 
     public void handleInputEvent(String text) {
@@ -118,16 +111,16 @@ public class CEmbeddedFrame extends EmbeddedFrame {
         synchronized (classLock) {
             // In some cases an applet may not receive the focus lost event
             // from the parent window (see 8012330)
-            globalFocusedWindow = (focused) ? this
-                    : ((globalFocusedWindow == this) ? null : globalFocusedWindow);
+            focusedWindow = (focused) ? this
+                    : ((focusedWindow == this) ? null : focusedWindow);
         }
-        if (globalFocusedWindow == this) {
+        if (focusedWindow == this) {
             // see bug 8010925
             // we can't put this to handleWindowFocusEvent because
             // it won't be invoced if focuse is moved to a html element
             // on the same page.
             CClipboard clipboard = (CClipboard) Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.checkPasteboardAndNotify();
+            clipboard.checkPasteboard();
         }
         if (parentWindowActive) {
             responder.handleWindowFocusEvent(focused, null);
@@ -135,12 +128,10 @@ public class CEmbeddedFrame extends EmbeddedFrame {
     }
 
     /**
-     * handleWindowFocusEvent is called for all applets, when the browser
-     * becames active/inactive. This event should be filtered out for
-     * non-focused applet. This method can be called from different threads.
+     * When the parent window is activated this method is called for all EmbeddedFrames in it.
      *
-     * When the window is activated and had focus before the deactivation
-     * calling this method triggers focus events in the following order:
+     * For the CEmbeddedFrame which had focus before the deactivation this method triggers
+     * focus events in the following order:
      *  1. WINDOW_ACTIVATED for this EmbeddedFrame
      *  2. WINDOW_GAINED_FOCUS for this EmbeddedFrame
      *  3. FOCUS_GAINED for the most recent focus owner in this EmbeddedFrame
@@ -149,36 +140,19 @@ public class CEmbeddedFrame extends EmbeddedFrame {
      *
      * @param parentWindowActive true if the window is activated, false otherwise
      */
+    // handleWindowFocusEvent is called for all applets, when the browser
+    // becomes active/inactive. This event should be filtered out for
+    // non-focused applet. This method can be called from different threads.
     public void handleWindowFocusEvent(boolean parentWindowActive) {
         this.parentWindowActive = parentWindowActive;
-        // If several applets are running in different browser's windows, it is necessary to
-        // detect the switching between the parent windows and update globalFocusedWindow accordingly.
-        synchronized (classLock) {
-            if (!parentWindowActive) {
-                this.browserWindowFocusedApplet = globalFocusedWindow;
-            }
-            if (parentWindowActive && globalFocusedWindow != this && isParentWindowChanged()) {
-                // It looks like we have switched to another browser window, let's restore focus to
-                // the previously focused applet in this window. If no applets were focused in the
-                // window, we will set focus to the first applet in the window.
-                globalFocusedWindow = (this.browserWindowFocusedApplet != null) ? this.browserWindowFocusedApplet
-                        : this;
-            }
-        }
         // ignore focus "lost" native request as it may mistakenly
         // deactivate active window (see 8001161)
-        if (globalFocusedWindow == this && parentWindowActive) {
+        if (focusedWindow == this && parentWindowActive) {
             responder.handleWindowFocusEvent(parentWindowActive, null);
         }
     }
 
     public boolean isParentWindowActive() {
         return parentWindowActive;
-    }
-
-    private boolean isParentWindowChanged() {
-        // If globalFocusedWindow is located at inactive parent window or null, we have swithed to
-        // another window.
-        return globalFocusedWindow != null ? !globalFocusedWindow.isParentWindowActive() : true;
     }
 }

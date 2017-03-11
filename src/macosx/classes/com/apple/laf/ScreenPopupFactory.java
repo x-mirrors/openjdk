@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,15 +26,19 @@
 package com.apple.laf;
 
 import java.awt.*;
-import java.security.PrivilegedAction;
-
 import javax.swing.*;
 
 import sun.lwawt.macosx.CPlatformWindow;
 
 class ScreenPopupFactory extends PopupFactory {
     static {
-        java.security.AccessController.doPrivileged((PrivilegedAction<?>)new sun.security.action.LoadLibraryAction("osxui"));
+        java.security.AccessController.doPrivileged(
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("osxui");
+                    return null;
+                }
+            });
     }
 
     static final Float TRANSLUCENT = new Float(248f/255f);

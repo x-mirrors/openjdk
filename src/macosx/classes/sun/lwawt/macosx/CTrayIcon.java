@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 
 package sun.lwawt.macosx;
 
+import sun.awt.AWTAccessor;
 import sun.awt.SunToolkit;
+import sun.lwawt.macosx.event.NSEvent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -97,10 +99,7 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
         if(popup == null) {
             return 0L;
         }
-        // This method is executed on Appkit, so if ptr is not zero means that,
-        // it is still not deallocated(even if we call NSApp postRunnableEvent)
-        // and sent CFRelease to the native queue
-        return checkAndCreatePopupPeer().ptr;
+        return checkAndCreatePopupPeer().getModel();
     }
 
     /**
@@ -341,6 +340,9 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
 
         dialog.addWindowListener(handler);
 
+        // suppress security warning for untrusted windows
+        AWTAccessor.getWindowAccessor().setTrayIconWindow(dialog, true);
+
         dialog.pack();
 
         return dialog;
@@ -495,3 +497,4 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
         }
     }
 }
+

@@ -73,7 +73,7 @@ public class CGLLayer extends CFRetainedResource {
     }
 
     public int getTransparency() {
-        return (isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT);
+        return isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT;
     }
 
     public Object getDestination() {

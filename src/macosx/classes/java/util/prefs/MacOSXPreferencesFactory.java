@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,10 +26,12 @@
 package java.util.prefs;
 
 class MacOSXPreferencesFactory implements PreferencesFactory {
+    @Override
     public Preferences userRoot() {
         return MacOSXPreferences.getUserRoot();
     }
 
+    @Override
     public Preferences systemRoot() {
         return MacOSXPreferences.getSystemRoot();
     }

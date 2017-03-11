@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -96,17 +96,6 @@ public interface PlatformWindow {
      * the newly created one.
      */
     public SurfaceData replaceSurfaceData();
-
-    /*
-     * Creates a new image to serve as a back buffer.
-     */
-    public Image createBackBuffer();
-
-    /*
-     * Move the given part of the back buffer to the front buffer.
-     */
-    public void flip(int x1, int y1, int x2, int y2,
-                     BufferCapabilities.FlipContents flipAction);
 
     public void setModalBlocked(boolean blocked);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,13 +25,10 @@
 
 package sun.lwawt.macosx;
 
-import sun.lwawt.LWWindowPeer;
-
 import java.awt.*;
 import java.beans.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -43,7 +40,13 @@ class CAccessibility implements PropertyChangeListener {
 
     static {
         // Need to load the native library for this code.
-        java.security.AccessController.doPrivileged((PrivilegedAction<?>)new sun.security.action.LoadLibraryAction("awt"));
+        java.security.AccessController.doPrivileged(
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("awt");
+                    return null;
+                }
+            });
     }
 
     static CAccessibility sAccessibility;
@@ -418,8 +421,6 @@ class CAccessibility implements PropertyChangeListener {
     }
 
     public static AccessibleAction getAccessibleAction(final Accessible a, final Component c) {
-        if (a == null) return null;
-
         return invokeAndWait(new Callable<AccessibleAction>() {
             public AccessibleAction call() throws Exception {
                 final AccessibleContext ac = a.getAccessibleContext();
@@ -665,29 +666,5 @@ class CAccessibility implements PropertyChangeListener {
                 return children;
             }
         }, c);
-    }
-
-    /**
-     * @return AWTView ptr, a peer of the CPlatformView associated with the toplevel container of the Accessible, if any
-     */
-    private static long getAWTView(Accessible a) {
-        final Accessible ax = CAccessible.getSwingAccessible(a);
-        if (!(ax instanceof Component)) return 0;
-
-        return invokeAndWait(new Callable<Long>() {
-            public Long call() throws Exception {
-                Component cont = (Component) ax;
-                while (cont != null && !(cont instanceof Window)) {
-                    cont = cont.getParent();
-                }
-                if (cont != null) {
-                    LWWindowPeer peer = (LWWindowPeer) cont.getPeer();
-                    if (peer != null) {
-                        return ((CPlatformWindow) peer.getPlatformWindow()).getContentView().getAWTView();
-                    }
-                }
-                return 0L;
-            }
-        }, (Component)ax);
     }
 }

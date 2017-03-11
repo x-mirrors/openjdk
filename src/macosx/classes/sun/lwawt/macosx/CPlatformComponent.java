@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,7 +35,7 @@ import sun.lwawt.PlatformWindow;
  * On OSX {@code CPlatformComponent} stores pointer to the native CAlayer which
  * can be used from JAWT.
  */
-final class CPlatformComponent extends CFRetainedResource
+class CPlatformComponent extends CFRetainedResource
         implements PlatformComponent {
 
     private volatile PlatformWindow platformWindow;

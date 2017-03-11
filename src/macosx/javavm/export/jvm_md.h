@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@
 #define _JAVASOFT_JVM_MD_H_
 
 /*
- * This file is currently collecting Mac OS X specific dregs for the
+ * This file is currently collecting system-specific dregs for the
  * JNI conversion, which should be sorted out later.
  */
 

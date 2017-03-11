@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -699,6 +699,20 @@ public class AquaTabbedPaneUI extends AquaTabbedPaneCopyFromBasicUI {
             if (visibleTabState.getIndex(i) == index) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns the bounds of the specified tab index.  The bounds are
+     * with respect to the JTabbedPane's coordinate space.  If the tab at this
+     * index is not currently visible in the UI, then returns null.
+     */
+    @Override
+    public Rectangle getTabBounds(final JTabbedPane pane, final int i) {
+        if (visibleTabState.needsScrollTabs()
+                && (visibleTabState.isBefore(i) || visibleTabState.isAfter(i))) {
+            return null;
+        }
+        return super.getTabBounds(pane, i);
     }
 
     /**

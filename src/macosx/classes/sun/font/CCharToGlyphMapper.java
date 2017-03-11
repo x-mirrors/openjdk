@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -131,15 +131,16 @@ public class CCharToGlyphMapper extends CharToGlyphMapper {
 
     public synchronized int charToGlyph(int unicode) {
         if (unicode >= 0x10000) {
-           int[] glyphs = new int[2];
-           char[] surrogates = new char[2];
-           int base = unicode - 0x10000;
-           surrogates[0] = (char)((base >>> 10) + HI_SURROGATE_START);
-           surrogates[1] = (char)((base % 0x400) + LO_SURROGATE_START);
-           charsToGlyphs(2, surrogates, glyphs);
-           return glyphs[0];
-        } else
-        return charToGlyph((char)unicode);
+            int[] glyphs = new int[2];
+            char[] surrogates = new char[2];
+            int base = unicode - 0x10000;
+            surrogates[0] = (char)((base >>> 10) + HI_SURROGATE_START);
+            surrogates[1] = (char)((base % 0x400) + LO_SURROGATE_START);
+            charsToGlyphs(2, surrogates, glyphs);
+            return glyphs[0];
+         } else {
+             return charToGlyph((char)unicode);
+         }
     }
 
     public synchronized void charsToGlyphs(int count, char[] unicodes, int[] glyphs) {

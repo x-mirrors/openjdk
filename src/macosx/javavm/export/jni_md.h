@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2000, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,8 @@
 #ifndef _JAVASOFT_JNI_MD_H_
 #define _JAVASOFT_JNI_MD_H_
 
-#define JNIEXPORT
-#define JNIIMPORT
+#define JNIEXPORT     __attribute__((visibility("default")))
+#define JNIIMPORT     __attribute__((visibility("default")))
 #define JNICALL
 
 typedef int jint;
@@ -36,6 +36,7 @@ typedef long jlong;
 #else
 typedef long long jlong;
 #endif
+
 typedef signed char jbyte;
 
 #endif /* !_JAVASOFT_JNI_MD_H_ */

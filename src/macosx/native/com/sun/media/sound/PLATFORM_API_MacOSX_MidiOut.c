@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,11 @@
 
 //#define USE_ERROR
 //#define USE_TRACE
+
+/* Use THIS_FILE when it is available. */
+#ifndef THIS_FILE
+    #define THIS_FILE __FILE__
+#endif
 
 #if USE_PLATFORM_MIDI_OUT == TRUE
 
@@ -128,7 +133,7 @@ INT32 MIDI_OUT_SendShortMessage(MidiDeviceHandle* handle, UINT32 packedMsg, UINT
                 case 0xF7:
                     // System exclusive
                     fprintf(stderr, "%s: %d->internal error: sysex message status=0x%X while sending short message\n",
-                            __FILE__, __LINE__, data[0]);
+                            THIS_FILE, __LINE__, data[0]);
                     byteIsInvalid = TRUE;
                     break;
 
@@ -154,7 +159,7 @@ INT32 MIDI_OUT_SendShortMessage(MidiDeviceHandle* handle, UINT32 packedMsg, UINT
                 default:
                     // Invalid message
                     fprintf(stderr, "%s: %d->Invalid message: message status=0x%X while sending short message\n",
-                            __FILE__, __LINE__, data[0]);
+                            THIS_FILE, __LINE__, data[0]);
                     byteIsInvalid = TRUE;
                     break;
             }
@@ -164,7 +169,7 @@ INT32 MIDI_OUT_SendShortMessage(MidiDeviceHandle* handle, UINT32 packedMsg, UINT
         default:
             // This can't happen, but handle it anyway.
             fprintf(stderr, "%s: %d->Invalid message: message status=0x%X while sending short message\n",
-                    __FILE__, __LINE__, data[0]);
+                    THIS_FILE, __LINE__, data[0]);
             byteIsInvalid = TRUE;
             break;
     }

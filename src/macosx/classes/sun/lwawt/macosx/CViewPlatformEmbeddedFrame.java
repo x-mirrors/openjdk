@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,17 +25,13 @@
 
 package sun.lwawt.macosx;
 
-import java.awt.BufferCapabilities.FlipContents;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.GraphicsDevice;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.MenuBar;
 import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Transparency;
 import java.awt.Window;
 import sun.awt.CausedFocusEvent.Cause;
 import sun.java2d.SurfaceData;
@@ -216,15 +212,5 @@ public class CViewPlatformEmbeddedFrame implements PlatformWindow {
     @Override
     public boolean isUnderMouse() {
         return view.isUnderMouse();
-    }
-
-    @Override
-    public Image createBackBuffer() {
-        return view.createBackBuffer();
-    }
-
-    @Override
-    public void flip(int x1, int y1, int x2, int y2, FlipContents flipAction) {
-        throw new RuntimeException("Not implemented");
     }
 }

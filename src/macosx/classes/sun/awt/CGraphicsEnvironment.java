@@ -60,9 +60,15 @@ public final class CGraphicsEnvironment extends SunGraphicsEnvironment {
     public static void init() { }
 
     static {
-        java.security.AccessController.doPrivileged(new sun.security.action.LoadLibraryAction("awt"));
-        java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Object>() {
-            public Object run() {
+        java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Void>() {
+            public Void run() {
+                System.loadLibrary("awt");
+                return null;
+            }
+        });
+
+        java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Void>() {
+            public Void run() {
                 if (isHeadless()) return null;
                 initCocoa();
                 return null;
@@ -175,6 +181,9 @@ public final class CGraphicsEnvironment extends SunGraphicsEnvironment {
             initDevices();
 
             d = devices.get(mainDisplayID);
+            if (d == null) {
+                throw new AWTError("no screen devices");
+            }
         }
         return d;
     }

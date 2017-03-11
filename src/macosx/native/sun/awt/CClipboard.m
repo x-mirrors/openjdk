@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,6 +73,7 @@ static CClipboard *sClipboard = nil;
 
     [super dealloc];
 }
+//- (void)finalize { [super finalize]; }
 
 - (NSData *)data {
     return fData;
@@ -171,8 +172,6 @@ static CClipboard *sClipboard = nil;
     else [args removeLastObject];
 }
 
-
-
 - (void) checkPasteboard:(id)application {
     AWT_ASSERT_APPKIT_THREAD;
     
@@ -201,19 +200,6 @@ static CClipboard *sClipboard = nil;
                 fClipboardOwner = NULL;
             }
         }
-    }
-}
-
-- (BOOL) checkPasteboardWithoutNotification:(id)application {
-    AWT_ASSERT_APPKIT_THREAD;
-    
-    NSInteger newChangeCount = [[NSPasteboard generalPasteboard] changeCount];
-    
-    if (fChangeCount != newChangeCount) {
-        fChangeCount = newChangeCount;    
-        return YES;
-    } else {
-        return NO;
     }
 }
 
@@ -362,17 +348,16 @@ JNF_COCOA_EXIT(env);
  * Method:    checkPasteboard
  * Signature: ()V
  */
-JNIEXPORT jboolean JNICALL Java_sun_lwawt_macosx_CClipboard_checkPasteboardWithoutNotification
-(JNIEnv *env, jobject inObject)
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CClipboard_checkPasteboard
+(JNIEnv *env, jobject inObject )
 {
-    __block BOOL ret = NO;
     JNF_COCOA_ENTER(env);
+
     [ThreadUtilities performOnMainThreadWaiting:YES block:^(){
-        ret = [[CClipboard sharedClipboard] checkPasteboardWithoutNotification:nil];
+        [[CClipboard sharedClipboard] checkPasteboard:nil];
     }];
-     
+        
     JNF_COCOA_EXIT(env);
-    return ret;
 }
 
 

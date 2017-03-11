@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,6 +41,11 @@
 
 //#define USE_ERROR
 //#define USE_TRACE
+
+/* Use THIS_FILE when it is available. */
+#ifndef THIS_FILE
+    #define THIS_FILE __FILE__
+#endif
 
 #if (USE_PLATFORM_MIDI_IN == TRUE) || (USE_PLATFORM_MIDI_OUT == TRUE)
 
@@ -317,7 +322,7 @@ static void processMessagesForPacket(const MIDIPacket* packet, MacMidiDeviceHand
                             packedMsg = pendingMessageStatus | pendingData[0] << 8;
                         } else {
                             fprintf(stderr, "%s: %d->internal error: pendingMessageStatus=0x%X, pendingDataLength=%d\n",
-                                    __FILE__, __LINE__, pendingMessageStatus, pendingDataLength);
+                                    THIS_FILE, __LINE__, pendingMessageStatus, pendingDataLength);
                             byteIsInvalid = TRUE;
                         }
                         pendingDataLength = 0;

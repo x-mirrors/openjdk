@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,15 @@
 
 package sun.lwawt.macosx;
 
-import java.awt.MenuItem;
-import java.awt.MenuShortcut;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.awt.peer.MenuItemPeer;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import sun.awt.SunToolkit;
 import sun.lwawt.LWToolkit;
+
+import java.awt.MenuContainer;
+import java.awt.MenuItem;
+import java.awt.MenuShortcut;
+import java.awt.event.*;
+import java.awt.peer.MenuItemPeer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CMenuItem extends CMenuComponent implements MenuItemPeer {
 
@@ -59,14 +58,9 @@ public class CMenuItem extends CMenuComponent implements MenuItemPeer {
     }
 
     @Override
-    long createModel() {
+    protected long createModel() {
         CMenuComponent parent = (CMenuComponent)LWToolkit.targetToPeer(getTarget().getParent());
-        return parent.executeGet(new CFNativeActionGet() {
-                @Override
-                public long run(long ptr) {
-                    return nativeCreate(ptr, isSeparator());
-                }
-            });
+        return nativeCreate(parent.getModel(), isSeparator());
     }
 
     public void setLabel(String label, char keyChar, int keyCode, int modifiers) {
@@ -96,17 +90,7 @@ public class CMenuItem extends CMenuComponent implements MenuItemPeer {
             keyChar = 0;
         }
 
-        final String finalLabel = label;
-        final char finalKeyChar = keyChar;
-        final int finalKeyCode = keyCode;
-        final int finalKeyMask = keyMask;
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeSetLabel(ptr, finalLabel, finalKeyChar,
-                                   finalKeyCode, finalKeyMask);
-                }
-            });
+        nativeSetLabel(getModel(), label, keyChar, keyCode, keyMask);
     }
 
     @Override
@@ -121,26 +105,16 @@ public class CMenuItem extends CMenuComponent implements MenuItemPeer {
      * There isn't a need to expose this except in a instanceof because
      * it isn't defined in the peer api.
      */
-    public final void setImage(final java.awt.Image img) {
-        final CImage cimg = CImage.getCreator().createFromImage(img);
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeSetImage(ptr, cimg == null ? 0L : cimg.ptr);
-                }
-            });
+    public void setImage(java.awt.Image img) {
+        CImage cimg = CImage.getCreator().createFromImage(img);
+        nativeSetImage(getModel(), cimg == null ? 0L : cimg.ptr);
     }
 
     /**
      * New API for tooltips
      */
-    public final void setToolTipText(final String text) {
-        execute(new CFNativeAction() {
-                @Override
-                public void run(long ptr) {
-                    nativeSetTooltip(ptr, text);
-                }
-            });
+    public void setToolTipText(String text) {
+        nativeSetTooltip(getModel(), text);
     }
 
 //    @Override
@@ -164,13 +138,7 @@ public class CMenuItem extends CMenuComponent implements MenuItemPeer {
             b &= ((CMenuItem) parent).isEnabled();
         }
         if (enabled.compareAndSet(!b, b)) {
-            final boolean finalB = b;
-            execute(new CFNativeAction() {
-                    @Override
-                    public void run(long ptr) {
-                        nativeSetEnabled(ptr, finalB);
-                    }
-                });
+            nativeSetEnabled(getModel(), b);
         }
     }
 

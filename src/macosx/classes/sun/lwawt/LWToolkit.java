@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,8 +37,8 @@ import java.util.*;
 
 import sun.awt.*;
 import sun.lwawt.macosx.*;
-import sun.misc.ThreadGroupUtils;
 import sun.print.*;
+import sun.security.util.SecurityConstants;
 
 public abstract class LWToolkit extends SunToolkit implements Runnable {
 
@@ -54,7 +54,12 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     private Clipboard clipboard;
     private MouseInfoPeer mouseInfoPeer;
 
-    public LWToolkit() {
+    /**
+     * Dynamic Layout Resize client code setting.
+     */
+    private volatile boolean dynamicLayoutSetting = true;
+
+    protected LWToolkit() {
     }
 
     /*
@@ -67,17 +72,22 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     protected final void init() {
         AWTAutoShutdown.notifyToolkitThreadBusy();
 
-        ThreadGroup rootTG = AccessController.doPrivileged(
-                new PrivilegedAction<ThreadGroup>() {
-                    @Override
-                    public ThreadGroup run() {
-                        return ThreadGroupUtils.getRootThreadGroup();
+        ThreadGroup mainTG = AccessController.doPrivileged(
+            new PrivilegedAction<ThreadGroup>() {
+                public ThreadGroup run() {
+                    ThreadGroup currentTG = Thread.currentThread().getThreadGroup();
+                    ThreadGroup parentTG = currentTG.getParent();
+                    while (parentTG != null) {
+                        currentTG = parentTG;
+                        parentTG = currentTG.getParent();
                     }
-                });
+                    return currentTG;
+                }
+            }
+        );
 
         Runtime.getRuntime().addShutdownHook(
-            new Thread(rootTG, new Runnable() {
-                @Override
+            new Thread(mainTG, new Runnable() {
                 public void run() {
                     shutdown();
                     waitForRunState(STATE_CLEANUP);
@@ -85,7 +95,7 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
             })
         );
 
-        Thread toolkitThread = new Thread(rootTG, this, "AWT-LW");
+        Thread toolkitThread = new Thread(mainTG, this, "AWT-LW");
         toolkitThread.setDaemon(true);
         toolkitThread.setPriority(Thread.NORM_PRIORITY + 1);
         toolkitThread.start();
@@ -214,6 +224,23 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
         return peer;
     }
 
+    private LWLightweightFramePeer createDelegatedLwPeer(LightweightFrame target,
+                                                         PlatformComponent platformComponent,
+                                                         PlatformWindow platformWindow)
+    {
+        LWLightweightFramePeer peer = new LWLightweightFramePeer(target, platformComponent, platformWindow);
+        targetCreatedPeer(target, peer);
+        peer.initialize();
+        return peer;
+    }
+
+    @Override
+    public FramePeer createLightweightFrame(LightweightFrame target) {
+        PlatformComponent platformComponent = createLwPlatformComponent();
+        PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.LW_FRAME);
+        return createDelegatedLwPeer(target, platformComponent, platformWindow);
+    }
+
     @Override
     public WindowPeer createWindow(Window target) {
         PlatformComponent platformComponent = createPlatformComponent();
@@ -313,7 +340,7 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     @Override
     public CanvasPeer createCanvas(Canvas target) {
         PlatformComponent platformComponent = createPlatformComponent();
-        LWCanvasPeer peer = new LWCanvasPeer(target, platformComponent);
+        LWCanvasPeer<?, ?> peer = new LWCanvasPeer<>(target, platformComponent);
         targetCreatedPeer(target, peer);
         peer.initialize();
         return peer;
@@ -476,7 +503,7 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     public Clipboard getSystemClipboard() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
-            security.checkSystemClipboardAccess();
+            security.checkPermission(SecurityConstants.AWT.ACCESS_CLIPBOARD_PERMISSION);
         }
 
         synchronized (this) {
@@ -499,6 +526,8 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     protected abstract PlatformWindow createPlatformWindow(LWWindowPeer.PeerType peerType);
 
     protected abstract PlatformComponent createPlatformComponent();
+
+    protected abstract PlatformComponent createLwPlatformComponent();
 
     protected abstract FileDialogPeer createFileDialogPeer(FileDialog target);
 
@@ -528,16 +557,51 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     }
 
     @Override
-    public void grab(Window w) {
-        if (w.getPeer() != null) {
-            ((LWWindowPeer)w.getPeer()).grab();
+    public void grab(final Window w) {
+        final Object peer = AWTAccessor.getComponentAccessor().getPeer(w);
+        if (peer != null) {
+            ((LWWindowPeer) peer).grab();
         }
     }
 
     @Override
-    public void ungrab(Window w) {
-        if (w.getPeer() != null) {
-            ((LWWindowPeer)w.getPeer()).ungrab(false);
+    public void ungrab(final Window w) {
+        final Object peer = AWTAccessor.getComponentAccessor().getPeer(w);
+        if (peer != null) {
+            ((LWWindowPeer) peer).ungrab(false);
         }
+    }
+
+    @Override
+    protected final Object lazilyLoadDesktopProperty(final String name) {
+        if (name.equals("awt.dynamicLayoutSupported")) {
+            return isDynamicLayoutSupported();
+        }
+        return super.lazilyLoadDesktopProperty(name);
+    }
+
+    @Override
+    public final void setDynamicLayout(final boolean dynamic) {
+        dynamicLayoutSetting = dynamic;
+    }
+
+    @Override
+    protected final boolean isDynamicLayoutSet() {
+        return dynamicLayoutSetting;
+    }
+
+    @Override
+    public final boolean isDynamicLayoutActive() {
+        // "Live resizing" is active by default and user's data is ignored.
+        return isDynamicLayoutSupported();
+    }
+
+    /**
+     * Returns true if dynamic layout of Containers on resize is supported by
+     * the underlying operating system and/or window manager.
+     */
+    protected final boolean isDynamicLayoutSupported() {
+        // "Live resizing" is supported by default.
+        return true;
     }
 }

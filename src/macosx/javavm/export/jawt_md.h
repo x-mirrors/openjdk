@@ -26,16 +26,6 @@
 #ifndef _JAVASOFT_JAWT_MD_H_
 #define _JAVASOFT_JAWT_MD_H_
 
-/*
- * To use jawt_X11DrawingSurfaceInfo you must define XAWT before including this header
- * file. You must also have the X11 headers installed on your system.
- */
-#ifdef XAWT
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Intrinsic.h>
-#endif // XAWT
-
 #include "jawt.h"
 
 #ifdef __OBJC__
@@ -79,29 +69,6 @@ extern "C" {
 @property (readonly) CALayer *windowLayer;
 @end
 #endif
-
-#ifdef XAWT
-/*
- * X11-specific declarations for AWT native interface.
- * See notes in jawt.h for an example of use.
- *
- * WARNING: This interface is deprecated and will be removed in a future release.
- */
-typedef struct jawt_X11DrawingSurfaceInfo {
-    Drawable drawable;
-    Display* display;
-    VisualID visualID;
-    Colormap colormapID;
-    int depth;
-    /*
-     * Since 1.4
-     * Returns a pixel value from a set of RGB values.
-     * This is useful for paletted color (256 color) modes.
-     */
-    int (JNICALL *GetAWTColor)(JAWT_DrawingSurface* ds,
-        int r, int g, int b);
-} JAWT_X11DrawingSurfaceInfo;
-#endif // XAWT
 
 #ifdef __cplusplus
 }

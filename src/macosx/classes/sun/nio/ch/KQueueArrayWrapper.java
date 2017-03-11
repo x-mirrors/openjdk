@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -89,8 +89,9 @@ class KQueueArrayWrapper {
     static {
         IOUtil.load();
         initStructSizes();
-        String datamodel = (String) java.security.AccessController.doPrivileged(
-        new sun.security.action.GetPropertyAction("sun.arch.data.model"));
+        String datamodel = java.security.AccessController.doPrivileged(
+            new sun.security.action.GetPropertyAction("sun.arch.data.model")
+        );
         is64bit = datamodel.equals("64");
     }
 
