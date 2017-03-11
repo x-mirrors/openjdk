@@ -20,8 +20,8 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-
-# Allowance for leapseconds added to each timezone file.
+#
+# Allowance for leap seconds added to each time zone file.
 
 # This file is in the public domain.
 
@@ -29,12 +29,13 @@
 # leap-seconds.list file available from most NIST time servers.
 # If the URL <ftp://time.nist.gov/pub/leap-seconds.list> does not work,
 # you should be able to pick up leap-seconds.list from a secondary NIST server.
+# See <http://tf.nist.gov/tf-cgi/servers.cgi> for a list of secondary servers.
 # For more about leap-seconds.list, please see
 # The NTP Timescale and Leap Seconds
-# <http://www.eecis.udel.edu/~mills/leap.html>.
+# http://www.eecis.udel.edu/~mills/leap.html
 
-# The International Earth Rotation Service periodically uses leap seconds
-# to keep UTC to within 0.9 s of UT1
+# The International Earth Rotation and Reference Systems Service
+# periodically uses leap seconds to keep UTC to within 0.9 s of UT1
 # (which measures the true angular orientation of the earth in space); see
 # Terry J Quinn, The BIPM and the accurate measure of time,
 # Proc IEEE 79, 7 (July 1991), 894-905 <http://dx.doi.org/10.1109/5.84965>.
@@ -77,3 +78,8 @@ Leap	1998	Dec	31	23:59:60	+	S
 Leap	2005	Dec	31	23:59:60	+	S
 Leap	2008	Dec	31	23:59:60	+	S
 Leap	2012	Jun	30	23:59:60	+	S
+Leap	2015	Jun	30	23:59:60	+	S
+Leap	2016	Dec	31	23:59:60	+	S
+
+#	Updated through IERS Bulletin C52
+#	File expires on:  28 June 2017

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -105,6 +105,8 @@ public class LWWindowPeer
 
     private final SecurityWarningWindow warningWindow;
 
+    private volatile boolean targetFocusable;
+
     /**
      * Current modal blocker or null.
      *
@@ -181,6 +183,7 @@ public class LWWindowPeer
 
         updateAlwaysOnTopState();
         updateMinimumSize();
+        updateFocusableWindowState();
 
         final Shape shape = getTarget().getShape();
         if (shape != null) {
@@ -240,13 +243,12 @@ public class LWWindowPeer
         if (!visible && warningWindow != null) {
             warningWindow.setVisible(false, false);
         }
-
+        updateFocusableWindowState();
         super.setVisibleImpl(visible);
         // TODO: update graphicsConfig, see 4868278
         platformWindow.setVisible(visible);
         if (isSimpleWindow()) {
             KeyboardFocusManagerPeer kfmPeer = LWKeyboardFocusManagerPeer.getInstance();
-
             if (visible) {
                 if (!getTarget().isAutoRequestFocus()) {
                     return;
@@ -397,6 +399,7 @@ public class LWWindowPeer
 
     @Override
     public void updateFocusableWindowState() {
+        targetFocusable = getTarget().isFocusableWindow();
         platformWindow.updateFocusableWindowState();
     }
 
@@ -441,6 +444,12 @@ public class LWWindowPeer
     @Override
     public void updateIconImages() {
         getPlatformWindow().updateIconImages();
+    }
+
+    @Override
+    public void setBackground(final Color c) {
+        super.setBackground(c);
+        updateOpaque();
     }
 
     @Override
@@ -629,6 +638,7 @@ public class LWWindowPeer
         final boolean isNewDevice = updateGraphicsDevice();
         if (resized || isNewDevice) {
             replaceSurfaceData();
+            updateMinimumSize();
         }
 
         // Third, COMPONENT_MOVED/COMPONENT_RESIZED/PAINT events
@@ -684,7 +694,7 @@ public class LWWindowPeer
     public void notifyNCMouseDown() {
         // Ungrab except for a click on a Dialog with the grabbing owner
         if (grabbingWindow != null &&
-            grabbingWindow != getOwnerFrameDialog(this))
+            !grabbingWindow.isOneOfOwnersOf(this))
         {
             grabbingWindow.ungrab();
         }
@@ -740,11 +750,10 @@ public class LWWindowPeer
                 lastMouseEventPeer = targetPeer;
             }
         } else {
-            PlatformWindow topmostPlatforWindow =
-                    platformWindow.getTopmostPlatformWindowUnderMouse();
+            PlatformWindow topmostPlatformWindow = LWToolkit.getLWToolkit().getPlatformWindowUnderMouse();
 
             LWWindowPeer topmostWindowPeer =
-                    topmostPlatforWindow != null ? topmostPlatforWindow.getPeer() : null;
+                    topmostPlatformWindow != null ? topmostPlatformWindow.getPeer() : null;
 
             // topmostWindowPeer == null condition is added for the backward
             // compatibility with applets. It can be removed when the
@@ -755,8 +764,7 @@ public class LWWindowPeer
                         screenX, screenY, modifiers, clickCount, popupTrigger,
                         targetPeer);
             } else {
-                LWComponentPeer<?, ?> topmostTargetPeer =
-                        topmostWindowPeer != null ? topmostWindowPeer.findPeerAt(r.x + x, r.y + y) : null;
+                LWComponentPeer<?, ?> topmostTargetPeer = topmostWindowPeer.findPeerAt(r.x + x, r.y + y);
                 topmostWindowPeer.generateMouseEnterExitEventsForComponents(when, button, x, y,
                         screenX, screenY, modifiers, clickCount, popupTrigger,
                         topmostTargetPeer);
@@ -779,7 +787,7 @@ public class LWWindowPeer
 
                 // Ungrab only if this window is not an owned window of the grabbing one.
                 if (!isGrabbing() && grabbingWindow != null &&
-                    grabbingWindow != getOwnerFrameDialog(this))
+                    !grabbingWindow.isOneOfOwnersOf(this))
                 {
                     grabbingWindow.ungrab();
                 }
@@ -1046,7 +1054,9 @@ public class LWWindowPeer
 
     @Override
     public final void displayChanged() {
-        updateGraphicsDevice();
+        if (updateGraphicsDevice()) {
+            updateMinimumSize();
+        }
         // Replace surface unconditionally, because internal state of the
         // GraphicsDevice could be changed.
         replaceSurfaceData();
@@ -1211,13 +1221,13 @@ public class LWWindowPeer
     }
 
     private boolean isFocusableWindow() {
-        boolean focusable = getTarget().isFocusableWindow();
+        boolean focusable  = targetFocusable;
         if (isSimpleWindow()) {
             LWWindowPeer ownerPeer = getOwnerFrameDialog(this);
             if (ownerPeer == null) {
                 return false;
             }
-            return focusable && ownerPeer.getTarget().isFocusableWindow();
+            return focusable && ownerPeer.targetFocusable;
         }
         return focusable;
     }
@@ -1230,6 +1240,17 @@ public class LWWindowPeer
     @Override
     public void emulateActivation(boolean activate) {
         changeFocusedWindow(activate, null);
+    }
+
+    private boolean isOneOfOwnersOf(LWWindowPeer peer) {
+        Window owner = (peer != null ? peer.getTarget().getOwner() : null);
+        while (owner != null) {
+            if ((LWWindowPeer)owner.getPeer() == this) {
+                return true;
+            }
+            owner = owner.getOwner();
+        }
+        return false;
     }
 
     /*
@@ -1263,7 +1284,7 @@ public class LWWindowPeer
         // - when the opposite (gaining focus) window is an owned/owner window.
         // - for a simple window in any case.
         if (!becomesFocused &&
-            (isGrabbing() || getOwnerFrameDialog(grabbingWindow) == this))
+            (isGrabbing() || this.isOneOfOwnersOf(grabbingWindow)))
         {
             if (focusLog.isLoggable(PlatformLogger.Level.FINE)) {
                 focusLog.fine("ungrabbing on " + grabbingWindow);
@@ -1273,6 +1294,12 @@ public class LWWindowPeer
         }
 
         KeyboardFocusManagerPeer kfmPeer = LWKeyboardFocusManagerPeer.getInstance();
+
+        if (!becomesFocused && kfmPeer.getCurrentFocusedWindow() != getTarget()) {
+            // late window focus lost event - ingoring
+            return;
+        }
+
         kfmPeer.setCurrentFocusedWindow(becomesFocused ? getTarget() : null);
 
         int eventID = becomesFocused ? WindowEvent.WINDOW_GAINED_FOCUS : WindowEvent.WINDOW_LOST_FOCUS;
@@ -1282,6 +1309,11 @@ public class LWWindowPeer
         postEvent(windowEvent);
     }
 
+    /*
+     * Retrieves the owner of the peer.
+     * Note: this method returns the owner which can be activated, (i.e. the instance
+     * of Frame or Dialog may be returned).
+     */
     static LWWindowPeer getOwnerFrameDialog(LWWindowPeer peer) {
         Window owner = (peer != null ? peer.getTarget().getOwner() : null);
         while (owner != null && !(owner instanceof Frame || owner instanceof Dialog)) {

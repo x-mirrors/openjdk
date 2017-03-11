@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2016, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package sun.lwawt.macosx;
 
 import sun.awt.AWTAccessor;
 import sun.awt.SunToolkit;
-import sun.lwawt.macosx.event.NSEvent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -76,8 +75,9 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
                 menuPeer = (CPopupMenu)popup.getPeer();
                 if (menuPeer == null) {
                     popup.addNotify();
+                    menuPeer = (CPopupMenu)popup.getPeer();
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -97,9 +97,17 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
     //invocation from the AWTTrayIcon.m
     public long getPopupMenuModel(){
         if(popup == null) {
-            return 0L;
+            PopupMenu popupMenu = target.getPopupMenu();
+            if (popupMenu != null) {
+                popup = popupMenu;
+            } else {
+                return 0L;
+            }
         }
-        return checkAndCreatePopupPeer().getModel();
+        // This method is executed on Appkit, so if ptr is not zero means that,
+        // it is still not deallocated(even if we call NSApp postRunnableEvent)
+        // and sent CFRelease to the native queue
+        return checkAndCreatePopupPeer().ptr;
     }
 
     /**
@@ -133,6 +141,10 @@ public class CTrayIcon extends CFRetainedResource implements TrayIconPeer {
         }
 
         dummyFrame.dispose();
+
+        if (popup != null) {
+            popup.removeNotify();
+        }
 
         LWCToolkit.targetDisposedPeer(target, this);
         target = null;

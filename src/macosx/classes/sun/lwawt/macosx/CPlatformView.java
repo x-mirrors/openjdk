@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,6 @@ import java.awt.geom.Rectangle2D;
 import sun.awt.CGraphicsConfig;
 import sun.awt.CGraphicsEnvironment;
 import sun.lwawt.LWWindowPeer;
-import sun.lwawt.macosx.event.NSEvent;
 
 import sun.java2d.SurfaceData;
 import sun.java2d.opengl.CGLLayer;
@@ -193,7 +192,8 @@ public class CPlatformView extends CFRetainedResource {
 
         if (event.getType() == CocoaConstants.NSScrollWheel) {
             responder.handleScrollEvent(x, y, event.getModifierFlags(),
-                                        event.getScrollDeltaX(), event.getScrollDeltaY());
+                                        event.getScrollDeltaX(), event.getScrollDeltaY(),
+                                        event.getScrollPhase());
         } else {
             responder.handleMouseEvent(event.getType(), event.getModifierFlags(), event.getButtonNumber(),
                                        event.getClickCount(), x, y, event.getAbsX(), event.getAbsY());
@@ -201,7 +201,7 @@ public class CPlatformView extends CFRetainedResource {
     }
 
     private void deliverKeyEvent(NSEvent event) {
-        responder.handleKeyEvent(event.getType(), event.getModifierFlags(),
+        responder.handleKeyEvent(event.getType(), event.getModifierFlags(), event.getCharacters(),
                                  event.getCharactersIgnoringModifiers(), event.getKeyCode(), true, false);
     }
 
