@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -37,6 +37,11 @@ EXFILES :=
 EXCLUDES :=
 
 ##########################################################################################
+# Include the corresponding custom file, if present.
+
+-include $(CUSTOM_MAKE_DIR)/CompileJavaClasses.gmk
+
+##########################################################################################
 
 EXCLUDES += com/sun/pept \
     com/sun/tools/example/trace \
@@ -52,23 +57,21 @@ ifdef OPENJDK
 endif
 
 ifndef OPENJDK
-  # There exists two versions of this file...
-  EXFILES := $(JDK_TOPDIR)/src/share/classes/javax/crypto/JarVerifier.java
+  # There exists two versions of these files...
+  EXFILES += $(JDK_TOPDIR)/src/share/classes/javax/crypto/JarVerifier.java
 
   ifeq ($(OPENJDK_TARGET_OS), windows)
     # This gets built on unix platforms implicitly in the old build even though
     # it's excluded in the closed build.
     EXCLUDES += sun/java2d/pisces
+  endif
+endif
 
+ifeq ($(OPENJDK_TARGET_OS), windows)
     # AccessBridge is compiled separately below.
     EXFILES += AccessBridge.java \
-        AccessBridgeLoader.java \
-        com/sun/java/accessibility/util/java/awt/ChoiceTranslator.java
-    # This seems to never be built
-    EXCLUDES += com/sun/java/accessibility/extensions
+        AccessBridgeLoader.java
   endif
-
-endif
 
 ifneq ($(OPENJDK_TARGET_OS), solaris)
   # Exclude Solaris nio and two security related files in src/share/classes
@@ -146,6 +149,17 @@ ifneq ($(OPENJDK_TARGET_OS), macosx)
       sun/tools/attach/BsdVirtualMachine.java
 endif
 
+ifneq ($(OPENJDK_TARGET_OS),aix)
+    EXFILES+=sun/nio/ch/AixAsynchronousChannelProvider.java \
+             sun/nio/ch/AixPollPort.java \
+             sun/nio/fs/AixFileStore.java \
+             sun/nio/fs/AixFileSystem.java \
+             sun/nio/fs/AixFileSystemProvider.java \
+             sun/nio/fs/AixNativeDispatcher.java \
+             sun/tools/attach/AixAttachProvider.java \
+             sun/tools/attach/AixVirtualMachine.java
+endif
+
 # Exclude BreakIterator classes that are just used in compile process to generate
 # data files and shouldn't go in the product
 EXFILES += sun/text/resources/BreakIteratorRules.java \
@@ -217,17 +231,12 @@ endif
 # Exclude another implicitly not included file.
 EXFILES += sun/util/locale/AsciiUtil.java
 
-ifeq (, $(filter $(OPENJDK_TARGET_OS), solaris macosx))
+ifeq (, $(filter $(OPENJDK_TARGET_OS), solaris macosx aix))
   #
-  # only solaris and macosx
+  # only solaris, macosx and aix
   #
   EXFILES += sun/nio/fs/PollingWatchService.java
 endif
-
-# TODO: Fix when converting NIO
-# Exclude *-linux-arm.java and *-linux-ppc.java from closed.
-EXFILES += -linux-arm.java \
-    -linux-ppc.java
 
 ifeq ($(OPENJDK_TARGET_OS), windows)
   EXFILES += sun/nio/ch/AbstractPollSelectorImpl.java \
@@ -256,7 +265,7 @@ include CopyIntoClasses.gmk
 
 ifndef OPENJDK
   CLOSED_SRC_DIRS := $(JDK_TOPDIR)/src/closed/share/classes \
-      $(JDK_TOPDIR)/src/closed/$(OPENJDK_TARGET_OS_API_DIR)/classes
+      $(wildcard $(JDK_TOPDIR)/src/closed/$(OPENJDK_TARGET_OS_API_DIR)/classes)
 endif
 
 MACOSX_SRC_DIRS :=
@@ -289,6 +298,16 @@ SECURITY_PKGS := \
     sun/security/pkcs11 \
     #
 
+AIX_SRC_DIRS :=
+ifeq ($(OPENJDK_TARGET_OS),aix)
+     AIX_SRC_DIRS += $(JDK_TOPDIR)/src/aix/classes
+
+  # these files are duplicated in AIX_SRC_DIRS
+  EXFILES += $(JDK_TOPDIR)/src/solaris/classes/sun/nio/ch/sctp/SctpChannelImpl.java \
+      $(JDK_TOPDIR)/src/solaris/classes/sun/nio/ch/sctp/SctpMultiChannelImpl.java \
+      $(JDK_TOPDIR)/src/solaris/classes/sun/nio/ch/sctp/SctpServerChannelImpl.java
+endif
+
 # The exception handling of swing beaninfo
 # These resources violates the convention of having code and resources together under
 # $(JDK_TOPDIR)/src/.../classes directories
@@ -313,6 +332,7 @@ $(eval $(call SetupJavaCompilation,BUILD_JDK,\
     SRC:=$(JDK_TOPDIR)/src/share/classes \
         $(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/classes \
         $(MACOSX_SRC_DIRS) \
+        $(AIX_SRC_DIRS) \
         $(JDK_OUTPUTDIR)/gensrc \
         $(JDK_OUTPUTDIR)/gensrc_no_srczip \
         $(CLOSED_SRC_DIRS),\
@@ -352,7 +372,6 @@ $(JDK_OUTPUTDIR)/classes/META-INF/services/com.sun.tools.xjc.Plugin:
 
 ##########################################################################################
 
-ifndef OPENJDK
   ifeq ($(OPENJDK_TARGET_OS), windows)
     ifeq ($(OPENJDK_TARGET_CPU_BITS), 32)
       $(eval $(call SetupJavaCompilation,BUILD_ACCESSBRIDGE_32, \
@@ -360,7 +379,7 @@ ifndef OPENJDK
           JAVAC_FLAGS := -cp $(JDK_OUTPUTDIR)/classes, \
           SRC := $(JDK_OUTPUTDIR)/gensrc_ab/32bit, \
           BIN := $(JDK_OUTPUTDIR)/classes_ab/32bit, \
-          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers))
+          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers_ab/32))
 
       $(BUILD_ACCESSBRIDGE_32): $(BUILD_JDK)
 
@@ -369,7 +388,7 @@ ifndef OPENJDK
           JAVAC_FLAGS := -cp $(JDK_OUTPUTDIR)/classes, \
           SRC := $(JDK_OUTPUTDIR)/gensrc_ab/legacy, \
           BIN := $(JDK_OUTPUTDIR)/classes_ab/legacy, \
-          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers))
+          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers_ab/LEGACY))
 
       $(BUILD_ACCESSBRIDGE_LEGACY): $(BUILD_JDK)
 
@@ -380,17 +399,16 @@ ifndef OPENJDK
           JAVAC_FLAGS := -cp $(JDK_OUTPUTDIR)/classes, \
           SRC := $(JDK_OUTPUTDIR)/gensrc_ab/64bit, \
           BIN := $(JDK_OUTPUTDIR)/classes_ab/64bit, \
-          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers))
+          HEADERS := $(JDK_OUTPUTDIR)/gensrc_headers_ab/64))
 
       $(BUILD_ACCESSBRIDGE_64): $(BUILD_JDK)
 
     endif
   endif
-endif
 
 ##########################################################################################
 
-all: $(BUILD_JDK) $(BUILD_SECURITY) $(BUILD_JOBJC) $(BUILD_JOBJC_HEADERS) $(COPY_EXTRA) \
+all: $(BUILD_JDK) $(BUILD_SECURITY) $(COPY_EXTRA) \
     $(JDK_OUTPUTDIR)/classes/META-INF/services/com.sun.tools.xjc.Plugin \
     $(BUILD_ACCESSBRIDGE_32) $(BUILD_ACCESSBRIDGE_64) \
     $(BUILD_ACCESSBRIDGE_LEGACY)
