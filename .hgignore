@@ -1,8 +1,10 @@
 ^build/
 ^dist/
-^testoutput/
-/nbproject/private/
-^make/netbeans/.*/build/
-^make/netbeans/.*/dist/
-^.hgtip
+^.idea/
+nbproject/private/
+^webrev
+^.src-rev$
+^.jib/
 .DS_Store
+.metadata/
+.recommenders/
