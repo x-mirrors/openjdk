@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -110,8 +110,6 @@ ifndef OPENJDK
   endif
 endif
 
-JAVAC_MAX_WARNINGS=false
-JAVAC_LINT_OPTIONS=-Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -149,7 +147,7 @@ OTHER_INCLUDES += \
 # Rules
 #
 CLASSDESTDIR = $(TEMPDIR)/classes
-JAVAHFLAGS = -bootclasspath "$(CLASSDESTDIR)$(CLASSPATH_SEPARATOR)$(CLASSBINDIR)"
+JAVAHFLAGS += -Xbootclasspath/p:$(CLASSDESTDIR)
 
 include $(BUILDDIR)/common/Mapfile-vers.gmk
 
@@ -164,6 +162,16 @@ else
   OTHER_LDLIBS = -ldl $(JVMLIB)
 endif
 
+# Other config files
+SUNPKCS11_CFG   =
+
+ifeq ($(PLATFORM), solaris)
+SUNPKCS11_CFG   = sunpkcs11-cfg
+endif # PLATFORM
+
+SUNPKCS11_CFG_SRC   = $(TOPDIR)/src/share/lib/security/sunpkcs11-solaris.cfg
+SUNPKCS11_CFG_BUILD = $(LIBDIR)/security/sunpkcs11-solaris.cfg
+
 #
 # We use a variety of subdirectories in the $(TEMPDIR) depending on what
 # part of the build we're doing.  Both OPENJDK/JDK builds are initially
@@ -177,11 +185,16 @@ UNSIGNED_DIR = $(TEMPDIR)/unsigned
 #
 
 ifdef OPENJDK
-all: build-jar install-jar
+all: $(SUNPKCS11_CFG) build-jar install-jar
 else
-all: build-jar install-prebuilt
+all: $(SUNPKCS11_CFG) build-jar install-prebuilt
 	$(build-warning)
 endif
+
+sunpkcs11-cfg: $(SUNPKCS11_CFG_BUILD)
+
+$(SUNPKCS11_CFG_BUILD): $(SUNPKCS11_CFG_SRC)
+	$(install-file)
 
 include $(BUILDDIR)/javax/crypto/Defs-jce.gmk
 
@@ -213,7 +226,7 @@ build-jar: $(UNSIGNED_DIR)/sunpkcs11.jar
 $(UNSIGNED_DIR)/sunpkcs11.jar: build
 	$(prep-target)
 	$(BOOT_JAR_CMD) cf $@ $(JAR_DIRS) \
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 
@@ -290,6 +303,7 @@ endif
 
 clobber clean::
 	$(RM) -r $(JAR_DESTFILE) $(TEMPDIR) $(JCE_BUILD_DIR)
+	$(RM) $(SUNPKCS11_CFG_BUILD) 
 
 .PHONY: build-jar jar install-jar
 ifndef OPENJDK

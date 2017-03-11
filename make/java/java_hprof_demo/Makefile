@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -83,7 +83,7 @@ OTHER_INCLUDES = -I$(SRCDIR) \
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS += wsock32.lib winmm.lib
 else
-  OTHER_LDLIBS += $(LIBSOCKET) -lnsl -ldl
+  OTHER_LDLIBS += $(LIBSOCKET) $(LIBNSL) -ldl
 endif
 
 #

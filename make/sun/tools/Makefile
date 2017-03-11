@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -48,7 +48,8 @@ AUTO_FILES_JAVA_DIRS = \
 
 # Extra jstat files
 FILES_copy += \
-  $(CLASSDESTDIR)/sun/tools/jstat/resources/jstat_options
+  $(CLASSDESTDIR)/sun/tools/jstat/resources/jstat_options \
+  $(CLASSDESTDIR)/sun/tools/jstat/resources/jstat_unsupported_options
 
 # Extra jhat files
 JHAT_RESOURCEDIR = $(CLASSDESTDIR)/com/sun/tools/hat/resources

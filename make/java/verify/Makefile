@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1999, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -51,12 +51,6 @@ endif
 FILES_c = \
 	check_code.c \
 	check_format.c
-
-#
-# libverify.so needs these 2 header files (opcodes.h opcodes.length) 
-# from the VM.
-#
-CPPFLAGS += -I$(SHARE_SRC)/javavm/include 
 
 #
 # Targets.

@@ -24,7 +24,6 @@
 #
 
 FILES_java = \
-	sun/net/ApplicationProxy.java \
 	sun/net/InetAddressCachePolicy.java \
 	sun/net/URLCanonicalizer.java \
 	sun/net/NetworkClient.java \
@@ -34,6 +33,7 @@ FILES_java = \
 	sun/net/ProgressEvent.java \
 	sun/net/ProgressListener.java \
 	sun/net/ProgressMeteringPolicy.java \
+	sun/net/SocksProxy.java \
 	sun/net/ResourceManager.java \
 	sun/net/TelnetInputStream.java \
 	sun/net/TelnetOutputStream.java \
@@ -41,12 +41,21 @@ FILES_java = \
 	sun/net/TransferProtocolClient.java \
 	sun/net/ConnectionResetException.java \
 	sun/net/NetProperties.java \
+	sun/net/NetHooks.java \
 	sun/net/util/IPAddressUtil.java \
+	sun/net/util/URLUtil.java \
 	sun/net/dns/ResolverConfiguration.java \
 	sun/net/dns/ResolverConfigurationImpl.java \
 	sun/net/ftp/FtpClient.java \
+	sun/net/ftp/FtpClientProvider.java \
+	sun/net/ftp/FtpDirEntry.java \
+	sun/net/ftp/FtpReplyCode.java \
+	sun/net/ftp/FtpDirParser.java \
 	sun/net/ftp/FtpLoginException.java \
 	sun/net/ftp/FtpProtocolException.java \
+	sun/net/ftp/impl/FtpClient.java \
+	sun/net/ftp/impl/DefaultFtpClientProvider.java \
+	sun/net/sdp/SdpSupport.java \
 	sun/net/spi/DefaultProxySelector.java \
 	sun/net/spi/nameservice/NameServiceDescriptor.java \
 	sun/net/spi/nameservice/NameService.java \
@@ -79,7 +88,6 @@ FILES_java = \
 	sun/net/www/http/Hurryable.java \
 	sun/net/www/protocol/http/Handler.java \
 	sun/net/www/protocol/http/HttpURLConnection.java \
-	sun/net/www/protocol/http/HttpLogFormatter.java \
 	sun/net/www/protocol/http/HttpAuthenticator.java \
 	sun/net/www/protocol/http/AuthenticationHeader.java \
 	sun/net/www/protocol/http/AuthenticationInfo.java \
@@ -89,11 +97,14 @@ FILES_java = \
 	sun/net/www/protocol/http/AuthScheme.java \
 	sun/net/www/protocol/http/BasicAuthentication.java \
 	sun/net/www/protocol/http/DigestAuthentication.java \
-	sun/net/www/protocol/http/NTLMAuthentication.java \
 	sun/net/www/protocol/http/NTLMAuthenticationProxy.java \
 	sun/net/www/protocol/http/NegotiateAuthentication.java \
-	sun/net/www/protocol/http/NegotiatorImpl.java \
-	sun/net/www/protocol/http/NegotiateCallbackHandler.java \
+	sun/net/www/protocol/http/Negotiator.java \
+	sun/net/www/protocol/http/ntlm/NTLMAuthentication.java \
+	sun/net/www/protocol/http/ntlm/NTLMAuthenticationCallback.java \
+	sun/net/www/protocol/http/spnego/NegotiatorImpl.java \
+	sun/net/www/protocol/http/spnego/NegotiateCallbackHandler.java \
+	sun/net/www/protocol/http/logging/HttpLogFormatter.java \
 	sun/net/www/protocol/https/AbstractDelegateHttpsURLConnection.java \
 	sun/net/www/protocol/https/HttpsClient.java \
 	sun/net/www/protocol/https/DefaultHostnameVerifier.java \
@@ -125,9 +136,10 @@ FILES_java = \
 	sun/net/idn/UCharacterEnums.java \
 	sun/net/idn/UCharacterDirection.java \
 	sun/net/idn/StringPrepDataReader.java \
-	sun/net/idn/StringPrep.java \
-	sun/net/www/protocol/http/InMemoryCookieStore.java
+	sun/net/idn/StringPrep.java
 
 ifeq ($(PLATFORM), windows)
-    FILES_java += sun/net/www/protocol/http/NTLMAuthSequence.java 
+    FILES_java += sun/net/www/protocol/http/ntlm/NTLMAuthSequence.java 
+else
+    FILES_java += sun/net/sdp/SdpProvider.java
 endif

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -39,10 +39,10 @@ ifeq ($(PLATFORM), windows)
   EXTRA_LIBS += wsock32.lib winmm.lib
 endif
 ifeq ($(PLATFORM), solaris)
-  OTHER_LDLIBS += $(LIBSOCKET) -lnsl -ldl
+  OTHER_LDLIBS += $(LIBSOCKET) $(LIBNSL) -ldl
 endif
 ifeq ($(PLATFORM), linux)
-  OTHER_LDLIBS += $(LIBSOCKET) -lnsl -ldl -lpthread
+  OTHER_LDLIBS += $(LIBSOCKET) $(LIBNSL) -ldl -lpthread
 endif
 
 #

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2003, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,7 @@ include FILES_java.gmk
 # Resources
 #
 LOCALE_SET_DEFINITION = j2sdk
-RESOURCE_BUNDLES_PROPERTIES = sun/tools/javac/resources/javac.properties
+RESOURCE_BUNDLES_UNCOMPILED_PROPERTIES = sun/tools/javac/resources/javac.properties
 
 #
 # Rules

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,12 +23,6 @@
 # questions.
 #
 
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
 BUILDDIR = ../../..
 PROGRAM = java
 PRODUCT = java
@@ -38,7 +32,6 @@ PRODUCT = java
 # must be set before Defs.gmk is included.
 #
 MS_RUNTIME_STATIC = true
-
 #
 # Statically link java to avoid the dependency on jli.dll.  This
 # must be set before Program.gmk is included.
@@ -49,6 +42,8 @@ include $(BUILDDIR)/common/Defs.gmk
 
 # Override the default version info with our own resource file (see 5106536)
 ifeq ($(PLATFORM), windows)
+LDLIBS_COMMON += user32.lib comctl32.lib
+
 ifdef OPENJDK
     RC_FLAGS += -i "$(PLATFORM_SRC)/resource/icons"
 else
@@ -66,8 +61,4 @@ OTHER_CPPFLAGS += -DLAUNCHER_NAME='"$(LAUNCHER_NAME)"'
 
 ifeq ($(PLATFORM), solaris)
 LDFLAGS += -R$(OPENWIN_LIB)
-endif
-
-ifeq ($(PLATFORM), solaris)
-LDFLAGS += -M mapfile-$(ARCH)
 endif

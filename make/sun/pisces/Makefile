@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -51,5 +51,11 @@ build: copy-files
 
 copy-files: $(FILES_copy)
 
-$(SERVICEDIR)/%: $(SHARE_SRC)/classes/sun/java2d/pisces/META-INF/services/%
+ifneq ($(PLATFORM), windows)
+ SERVICE_SRC = $(PLATFORM_SRC)
+else
+ SERVICE_SRC = $(SHARE_SRC)
+endif
+
+$(SERVICEDIR)/%: $(SERVICE_SRC)/classes/sun/java2d/pisces/META-INF/services/%
 	$(install-file)

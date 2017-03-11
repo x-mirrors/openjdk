@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -33,13 +33,13 @@ PACKAGE = sun.rmi.activation
 PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk
 
-build: stubs 
+build: stubs rmid
 
 #
 # Resources
 #
 LOCALE_SET_DEFINITION = jre
-RESOURCE_BUNDLES_PROPERTIES = sun/rmi/server/resources/rmid.properties
+RESOURCE_BUNDLES_UNCOMPILED_PROPERTIES = sun/rmi/server/resources/rmid.properties
 
 #
 # Extra dependencies.
@@ -75,4 +75,5 @@ stubs: $(FILES_stubs)
 #
 include $(BUILDDIR)/common/Classes.gmk
 
-
+rmid:
+	$(call make-launcher, rmid, sun.rmi.server.Activation, , )

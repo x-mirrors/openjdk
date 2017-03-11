@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,18 +23,10 @@
 # questions.
 #
 
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
 BUILDDIR = ../..
 PACKAGE = java.net
 LIBRARY = net
 PRODUCT = sun
-JAVAC_MAX_WARNINGS = true
-JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -47,6 +39,8 @@ AUTO_FILES_JAVA_DIRS = java/net
 ifeq ($(PLATFORM), windows)
     FILES_c += NTLMAuthSequence.c
     FILES_c += NetworkInterface_winXP.c
+else
+    FILES_c += SdpSupport.c
 endif
 
 FILES_export = \
@@ -87,7 +81,8 @@ endif
 #
 # Find platform specific native code
 #
-vpath %.c $(PLATFORM_SRC)/native/sun/net/dns $(PLATFORM_SRC)/native/sun/net/www/protocol/http $(PLATFORM_SRC)/native/sun/net/spi
+vpath %.c $(PLATFORM_SRC)/native/sun/net/dns $(PLATFORM_SRC)/native/sun/net/www/protocol/http/ntlm \
+    $(PLATFORM_SRC)/native/sun/net/sdp $(PLATFORM_SRC)/native/sun/net/spi
 
 #
 # Include rules
@@ -101,7 +96,7 @@ ifeq ($(PLATFORM), windows)
                  secur32.lib iphlpapi.lib delayimp.lib \
                  /DELAYLOAD:secur32.dll /DELAYLOAD:iphlpapi.dll
 else
-  OTHER_LDLIBS = $(LIBSOCKET) -lnsl -ldl $(JVMLIB)
+  OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) -ldl $(JVMLIB)
 endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -lpthread
@@ -114,11 +109,23 @@ CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressI
 #
 LOCALE_SET_DEFINITION = jre
 
-properties: $(LIBDIR) $(LIBDIR)/net.properties
+MISC_FILES = $(LIBDIR) $(LIBDIR)/net.properties
 
 $(LIBDIR)/net.properties: $(SHARE_SRC)/lib/net.properties
-	@$(RM) $@
-	$(CP) $< $@
+	$(install-file)
 
-build: properties
+# 
+# SDP configuration template
+#
+ifeq ($(PLATFORM), solaris)
+SDP_PATH = sdp/sdp.conf.template
+SDP_CONF = $(LIBDIR)/$(SDP_PATH)
+$(SDP_CONF): $(PLATFORM_SRC)/lib/$(SDP_PATH)
+	@$(RM) $*
+	$(install-file)
+
+MISC_FILES += $(SDP_CONF)
+endif
+
+build: $(MISC_FILES)
 

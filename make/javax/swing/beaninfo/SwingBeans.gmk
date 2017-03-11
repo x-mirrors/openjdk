@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,7 @@
 
 #
 # Makefile to build the BeanInfo generation tool (ie, a doclet), and
-# then the beaninfo itself.  Swing versions prior to 1.2 is no longer
+# then the beaninfo itself.  Swing versions prior to 1.2 are no longer
 # built.
 #
 # This makefile could be a lot simpler if we made it more regular.
@@ -44,12 +44,13 @@ swing-1.2-beans-debug:
 	$(MAKE) DEBUG_FLAG=true make-swing-beans
 
 
-LOCAL_JAVADOC   = $(JAVADOC_CMD) $(JAVADOCFLAGS)
 # get the absolute path to the jar command.
 PREFIX          = 1.2
-JAVADOCFLAGS    = $(NO_PROPRIETARY_API_WARNINGS) $(LANGUAGE_VERSION)
+JAVADOCFLAGS    += $(NO_PROPRIETARY_API_WARNINGS) $(LANGUAGE_VERSION)
 SWINGPKG        = javax/swing
 LOCAL_JAVAC_FLAGS = $(OTHER_JAVACFLAGS)
+# since JAVADOC_CMD runs on ALT_BOOTDIR, the doclet and all its classes must be compiled to match
+DOCLET_JAVAC_FLAGS = -source 6 -target 6
 
 include FILES.gmk
 include $(BUILDDIR)/common/Release.gmk
@@ -86,7 +87,7 @@ $(OBJDIR) $(BEANCLASSDIR) $(BEANSRCDIR) $(DOCLETDST)::
 	@$(MKDIR) -p $@
 
 $(DOCLETDST)/%.class: $(DOCLETSRC)/%.java
-	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) -classpath "$(CLASSBINDIR)$(CLASSPATH_SEPARATOR)$(DOCLETSRC)" -d $(DOCLETDST) $?
+	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) $(DOCLET_JAVAC_FLAGS) -classpath "$(CLASSBINDIR)$(CLASSPATH_SEPARATOR)$(DOCLETSRC)" -d $(DOCLETDST) $?
 	@$(java-vm-cleanup)
 
 # To run, the doclet needs SwingBeanInfoBase class.  Also Notice the lie
@@ -95,11 +96,11 @@ $(DOCLETDST)/%.class: $(DOCLETSRC)/%.java
 .SwingBeanInfo: $(OBJDIR) $(BEANCLASSDIR) $(BEANSRCDIR) $(SWINGPKG)/BeanInfoUtils.class $(SWINGPKG)/SwingBeanInfoBase.class 
 
 $(SWINGPKG)/BeanInfoUtils.class: $(BEANSRCDIR)/BeanInfoUtils.java
-	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) -d $(BEANCLASSDIR) $<
+	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) $(DOCLET_JAVAC_FLAGS) -d $(BEANCLASSDIR) $<
 	@$(java-vm-cleanup)
 
 $(SWINGPKG)/SwingBeanInfoBase.class: $(BEANSRCDIR)/SwingBeanInfoBase.java $(BEANSRCDIR)/BeanInfoUtils.java
-	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) -classpath $(BEANCLASSDIR) -d $(BEANCLASSDIR) $<
+	$(JAVAC_CMD) $(LOCAL_JAVAC_FLAGS) $(DOCLET_JAVAC_FLAGS) -classpath $(BEANCLASSDIR) -d $(BEANCLASSDIR) $<
 	@$(java-vm-cleanup)
 
 #
@@ -112,7 +113,7 @@ mkbeaninfo: $(BEANSRCDIR) .delete.beanlist $(FILES_beans) .javadoc.beanlist
 
 .javadoc.beanlist:
 	if [ -s $(TEMPDIR)/.beans.list ]; \
-	then $(LOCAL_JAVADOC) $(DOCLETFLAGS) -x $(DEBUG_FLAG) -d $(BEANSRCDIR) -t $(DOCLETSRC)/SwingBeanInfo.template -docletpath $(DOCLETDST) \
+	then $(JAVADOC_CMD) $(DOCLETFLAGS) -x $(DEBUG_FLAG) -d $(BEANSRCDIR) -t $(DOCLETSRC)/SwingBeanInfo.template -docletpath $(DOCLETDST) \
 	    $(shell if [ -s $(TEMPDIR)/.beans.list ]; then $(CAT) $(TEMPDIR)/.beans.list; fi); \
 	fi
 	@$(java-vm-cleanup)
@@ -170,7 +171,7 @@ mkpackaging:
 	$(BOOT_JAR_CMD) cf $(TEMPDIR)/tmp.jar \
 	     -C $(BEANCLASSDIR) javax \
 	     -C $(BEANCLASSDIR) sun \
-	     $(JAR_JFLAGS)
+	     $(BOOT_JAR_JFLAGS)
 	$(MV) $(TEMPDIR)/tmp.jar $(JDK_IMAGE_DIR)/lib/dt.jar
 	@$(java-vm-cleanup)
 

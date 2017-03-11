@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,8 @@ include $(BUILDDIR)/common/Defs.gmk
 AUTO_FILES_JAVA_DIRS = com/sun/tools/extcheck
 
 SUBDIRS = attach
+include $(BUILDDIR)/common/Subdirs.gmk
+
 all build:
 	$(SUBDIRS-loop)
 clean clobber::

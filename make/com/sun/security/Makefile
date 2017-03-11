@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -28,11 +28,12 @@
 #
 
 BUILDDIR = ../../..
-SUBDIRS_MAKEFLAGS += JAVAC_MAX_WARNINGS=false
-SUBDIRS_MAKEFLAGS += JAVAC_LINT_OPTIONS=-Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
-SUBDIRS = jgss sasl auth auth/module
+SUBDIRS = auth
+SUBDIRS_misc = jgss sasl auth/module
+include $(BUILDDIR)/common/Subdirs.gmk
+
 all build clean clobber::
 	$(SUBDIRS-loop)
 

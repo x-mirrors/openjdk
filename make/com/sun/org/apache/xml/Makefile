@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,7 @@ AUTO_FILES_JAVA_DIRS = com/sun/org/apache/xml
 # Resources
 #
 LOCALE_SET_DEFINITION = jre
-NEW_RESOURCE_BUNDLES_PROPERTIES = \
+NEW_RESOURCE_BUNDLES_UNCOMPILED_PROPERTIES = \
    $(PKGDIR)/internal/security/resource/config.dtd \
    $(PKGDIR)/internal/security/resource/config.xml \
    $(PKGDIR)/internal/security/resource/xmlsecurity_de.properties \

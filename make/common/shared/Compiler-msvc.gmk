@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,12 +24,6 @@
 #
 
 #
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
-#
 # MSVC Compiler settings
 #
 
@@ -40,9 +34,8 @@ ifeq ($(PLATFORM), windows)
   CCC          = $(COMPILER_PATH)cl
   LIBEXE       = $(COMPILER_PATH)lib
   LINK         = $(COMPILER_PATH)link
-  RC           = $(MSDEVTOOLS_PATH)rc
   LINK32       = $(LINK)
-  RSC          = $(RC)
+  DUMPBIN      = $(COMPILER_PATH)dumpbin.exe
  
   # Fill in unknown values
   COMPILER_NAME=Unknown MSVC Compiler
@@ -51,7 +44,7 @@ ifeq ($(PLATFORM), windows)
   # unset any GNU Make settings of MFLAGS and MAKEFLAGS which may mess up nmake
   NMAKE          = MFLAGS= MAKEFLAGS= $(COMPILER_PATH)nmake -nologo
 
- # Compiler version and type (Always get word after "Version")
+  # Compiler version and type (Always get word after "Version")
   CC_VER  := $(shell $(CC) 2>&1 | $(HEAD) -n 1 | $(SED) 's/.*\(Version.*\)/\1/' | $(NAWK) '{print $$2}')
 
   LINK_VER := $(shell $(LINK) | $(HEAD) -n 1 | $(NAWK) '{print $$6}')
@@ -78,7 +71,7 @@ ifeq ($(PLATFORM), windows)
     MT     = $(_OTHER_TOOLS_BIN)/mt.exe
     MTL    = $(_OTHER_TOOLS_BIN)/midl.exe
   endif
- 
+  
   # These variables can never be empty
   ifndef COMPILER_PATH
     COMPILER_PATH := $(error COMPILER_PATH cannot be empty here)
@@ -89,8 +82,11 @@ ifeq ($(PLATFORM), windows)
   ifneq ($(COMPILER_VERSION),VS2010)
     COMPILER_VERSION := $(error COMPILER_VERSION must be VS2010)
   endif
-
+  
   # Shared library generation flag
   SHARED_LIBRARY_FLAG = -LD
+  # RSC is always same as RC (Not sure who uses this RSC variable)
+  RSC = $(RC)
+
 endif
 

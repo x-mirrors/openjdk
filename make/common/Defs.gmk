@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,13 @@
 # WARNING: This file is shared with other workspaces.
 #          So when it includes other files, it must use JDK_TOPDIR.
 #
+
+# Check for strange explicit settings (change to empty or true)
+ifdef OPENJDK
+  ifneq ($(OPENJDK),true)
+    x:=$(error "OPENJDK (if defined) can only be set to true")
+  endif
+endif
 
 #
 # On Solaris, the 'make' utility from Sun will not work with these makefiles.
@@ -76,28 +83,20 @@ ifndef CLOSED_SRC
   CLOSED_SRC  = $(BUILDDIR)/../src/closed
 endif
 
-# If we have no closed directory, force it to an openjdk build
-CLOSED_SRC_DIR_EXISTS := $(shell \
-  if [ -d $(CLOSED_SRC) ] ; then \
-    echo true; \
-  else \
-    echo false; \
-  fi)
-ifeq ($(CLOSED_SRC_DIR_EXISTS), false)
-  OPENJDK = true
+# If CLOSE_SRC_INCLUDED isn't set to true, check if there's any
+# closed directory.
+ifneq ($(CLOSED_SRC_INCLUDED), true)
+  CLOSED_SRC_INCLUDED := $(shell \
+    if [ -d $(CLOSED_SRC) ] ; then \
+      echo true; \
+    else \
+      echo false; \
+    fi)
 endif
 
-# Check for strange explicit settings (change to empty or true)
-ifdef OPENJDK
-  ifeq ($(OPENJDK),false)
-    # Silently treat as not defined
-    OPENJDK =
-  else
-    ifneq ($(OPENJDK),true)
-      dummy := $(warning "WARNING: OPENKJDK=$(OPENJDK) being treated as true")
-      OPENJDK = true
-    endif
-  endif
+# Set OPENJDK based on CLOSED_SRC_INCLUDED
+ifeq ($(CLOSED_SRC_INCLUDED), false)
+  OPENJDK = true
 endif
 
 # Define where closed directories are
@@ -110,18 +109,46 @@ else
   endif
 endif
 
-# Default output directory
-ifdef OPENJDK
-_OUTPUTDIR=$(JDK_TOPDIR)/build/$(PLATFORM)-$(ARCH)$(OPENJDK_SUFFIX)
-else
-_OUTPUTDIR=$(JDK_TOPDIR)/build/$(PLATFORM)-$(ARCH)
-endif
-
 #
 # Get platform definitions
 #
 
 include $(JDK_TOPDIR)/make/common/Defs-$(PLATFORM).gmk
+
+#
+# SE-Embedded support, if enabled
+#
+
+include $(JDK_TOPDIR)/make/common/Defs-embedded.gmk
+
+#
+# Cross-compilation Settings
+#
+ifdef CROSS_COMPILE_ARCH
+  # Can't run the tools we just built
+  USE_ONLY_BOOTDIR_TOOLS = true
+
+  # When cross-compiling CC generates code for the target, but
+  # some parts of the build generate C code that has to be compiled
+  # and executed on the build host - HOST_CC is the 'local' compiler.
+  # For linux the default is /usr/bin/gcc; other platforms need to
+  # set it explicitly
+  ifeq ($(PLATFORM), linux)
+    ifndef HOST_CC
+      HOST_CC = $(USRBIN_PATH)gcc
+    endif
+  endif
+else
+  # Must set HOST_CC if not already set
+  ifndef HOST_CC
+    HOST_CC = $(CC)
+  endif
+endif
+
+# Reset the VM name for client-only builds
+ifdef BUILD_CLIENT_ONLY
+  VM_NAME = client
+endif
 
 #
 # Freetype logic is applicable to OpenJDK only
@@ -161,12 +188,6 @@ DEVTOOLS_FT_DIR_EXISTS = $(shell \
     endif
   endif 
 
-  ifeq ($(PLATFORM), windows)
-    FREETYPE_LIB = $(FREETYPE_LIB_PATH)/freetype.lib
-  else
-    FREETYPE_LIB = -L$(FREETYPE_LIB_PATH) -lfreetype
-  endif
-
   ifdef ALT_FREETYPE_HEADERS_PATH
     FREETYPE_HEADERS_PATH = $(ALT_FREETYPE_HEADERS_PATH)
   else
@@ -177,6 +198,12 @@ DEVTOOLS_FT_DIR_EXISTS = $(shell \
     endif
   endif
 endif
+
+#
+# zlib version
+#
+ZLIB_VERSION = 1.2.3
+
 
 #
 # Localizations for the different parts of the product beyond English
@@ -237,6 +264,8 @@ BUILDTOOLCLASSDIR   = $(OUTPUTDIR)/btclasses
 # for build tool jar files
 BUILDTOOLJARDIR     = $(OUTPUTDIR)/btjars
 ABS_BUILDTOOLJARDIR = $(ABS_OUTPUTDIR)/btjars
+# for generated tool class files
+BUILDTOOLBINDIR     = $(OUTPUTDIR)/btbins
 # for generated java source files
 GENSRCDIR           = $(OUTPUTDIR)/gensrc
 # for generated C source files (not javah)
@@ -254,7 +283,7 @@ DOCSDIR             = $(OUTPUTDIR)/docs$(DOCSDIRSUFFIX)
 DOCSDIRSUFFIX       =
 
 # The MESSAGE, WARNING and ERROR files are used to store sanityck and 
-# SCCS check messages, warnings and errors. 
+# warnings and errors. 
 ifndef ERROR_FILE
   ERROR_FILE   = $(OUTPUTDIR)/sanityCheckErrors.txt
 endif
@@ -274,10 +303,9 @@ DEMOSRCDIR          = $(SHARE_SRC)/demo
 # An attempt is made to generate unique enough directories for the
 # generated files to not have name collisisons. Most build units
 # defines PRODUCT (except Release.gmk), but then they may or may 
-# not define PACKAGE, THREADIR (only HPI uses this), PROGRAM, and 
-# LIBRARY. This code chunk attempts to generate a unique 
-# OBJDIR/CLASSHDRDIR for each build unit based on which of those 
-# values are set within each build unit.
+# not define PACKAGE, PROGRAM, and LIBRARY. This code attempts to
+# generate a unique OBJDIR/CLASSHDRDIR for each build unit based
+# on which of those values are set within each build unit.
 
 UNIQUE_LOCATION_STRING = tmp
 
@@ -299,10 +327,6 @@ ifneq ($(LIBRARY),)
   else
     UNIQUE_LOCATION_STRING += /$(LIBRARY)
   endif
-endif
-
-ifneq ($(THREADDIR),)
-  UNIQUE_LOCATION_STRING += /$(THREADDIR)
 endif
 
 # the use of += above makes a space separated list which we need to 
@@ -345,8 +369,7 @@ endif
 
 INCLUDES = -I. -I$(CLASSHDRDIR) \
 	$(patsubst %,-I%,$(subst $(CLASSPATH_SEPARATOR), ,$(VPATH.h))) $(OTHER_INCLUDES)
-OTHER_CPPFLAGS = $(INCLUDES)
-
+OTHER_CPPFLAGS += $(INCLUDES)
 
 #
 # vpaths.  These are the default locations searched for source files.
@@ -383,7 +406,7 @@ vpath %.$(OBJECT_SUFFIX) $(OBJDIR)
 # namely jni.h, jvm.h, and jni_utils.h, plus their platform-specific
 # relatives.
 #
-VPATH.h =   $(PLATFORM_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/include$(CLASSPATH_SEPARATOR)$(PLATFORM_SRC)/javavm/include
+VPATH.h =   $(PLATFORM_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/export
 vpath %.h   $(VPATH.h)
 
 #
@@ -414,6 +437,19 @@ PKGDIR		= $(subst .,/,$(PACKAGE))
 #
 include $(JDK_MAKE_SHARED_DIR)/Defs-java.gmk
 
+UNIQUE_PATH_PATTERN = $(subst /,.,$(UNIQUE_PATH))
+
+# Run MAKE $@ for a launcher:
+#   $(call make-launcher, name, mainclass, java-args, main-args)
+define make-launcher
+$(CD) $(BUILDDIR)/launchers && \
+$(MAKE) -f Makefile.launcher \
+        PROGRAM=$(strip $1) \
+        MAIN_CLASS=$(strip $2) \
+        MAIN_JAVA_ARGS="$(strip $3)" \
+        MAIN_ARGS="$(strip $4)"
+endef
+
 #
 # Convenient macros
 #
@@ -430,6 +466,18 @@ $(prep-target)
 $(CP) $< $@
 endef
 
+define chmod-file
+$(CHMOD) $1 $@
+endef
+
+define install-sym-link
+$(LN) -s $1 $@
+endef
+
+define install-manifest-file
+$(install-file)
+endef
+
 # Cleanup rule for after debug java run (hotspot.log file is left around)
 #   (This could be an old leftover file in a read-only area, use the @- prefix)
 HOTSPOT_LOG_NAME = hotspot.log
@@ -437,130 +485,8 @@ define java-vm-cleanup
 if [ -w $(HOTSPOT_LOG_NAME) ] ; then $(RM) $(HOTSPOT_LOG_NAME); fi
 endef
 
-# Default make settings for processing SUBDIRS with clobber or clean names
-SUBDIRS_MAKEFLAGS-clobber = INCREMENTAL_BUILD=false
-SUBDIRS_MAKEFLAGS-clean   = INCREMENTAL_BUILD=false
-
 # Current directory
 CURRENT_DIRECTORY := $(shell $(PWD))
-
-# If no timing wanted, we need to define these as empty
-ifdef NO_TIMING
-
-TIMING_ID:=NA
-
-define TIMING_start
-t=0:0:0:0
-endef
-
-define TIMING_end
-time_used=0
-endef
-
-else # NO_TIMING
-
-# Default timing id
-TIMING_ID:=$(shell $(BASENAME) $(CURRENT_DIRECTORY))
-
-# Timing start (must be used in same shell, e.g. same command line)
-#    Defines the shell variable $1 to have the start time.
-define TIMING_start
-$1=`$(DATE) +%j:%H:%M:%S`
-endef
-
-# Timing end (must be used in same shell, e.g. same command line)
-#    Expects shell variable $1 to have been defined as the start time.
-#    Expects shell variable $2 to have timing id string
-#    Sets total_seconds shell variable as the total seconds used.
-#    Sets time_used shell variable to contain format "%dh%dm%ds"
-define TIMING_end
-begTime="$${$1}"; \
-timing_id="$${$2}"; \
-endTime=`$(DATE) +%j:%H:%M:%S`; \
-d1=`$(ECHO) $${begTime} | $(CUT) -d':' -f1 | $(SED) -e 's@^0*@@'`; \
-if [ "$${d1}" = "" ] ; then d1=0; fi; \
-h1=`$(ECHO) $${begTime} | $(CUT) -d':' -f2 | $(SED) -e 's@^0*@@'`; \
-if [ "$${h1}" = "" ] ; then h1=0; fi; \
-m1=`$(ECHO) $${begTime} | $(CUT) -d':' -f3 | $(SED) -e 's@^0*@@'`; \
-if [ "$${m1}" = "" ] ; then m1=0; fi; \
-s1=`$(ECHO) $${begTime} | $(CUT) -d':' -f4 | $(SED) -e 's@^0*@@'`; \
-if [ "$${s1}" = "" ] ; then s1=0; fi; \
-d2=`$(ECHO) $${endTime} | $(CUT) -d':' -f1 | $(SED) -e 's@^0*@@'`; \
-if [ "$${d2}" = "" ] ; then d2=0; fi; \
-h2=`$(ECHO) $${endTime} | $(CUT) -d':' -f2 | $(SED) -e 's@^0*@@'`; \
-if [ "$${h2}" = "" ] ; then h2=0; fi; \
-m2=`$(ECHO) $${endTime} | $(CUT) -d':' -f3 | $(SED) -e 's@^0*@@'`; \
-if [ "$${m2}" = "" ] ; then m2=0; fi; \
-s2=`$(ECHO) $${endTime} | $(CUT) -d':' -f4 | $(SED) -e 's@^0*@@'`; \
-if [ "$${s2}" = "" ] ; then s2=0; fi; \
-t1_secs=`$(EXPR) $${d1} '*' 60 '*' 60 '*' 24 '+' $${h1} '*' 60 '*' 60 \
-		 '+' $${m1} '*' 60 '+' $${s1}`; \
-t2_secs=`$(EXPR) $${d2} '*' 60 '*' 60 '*' 24 '+' $${h2} '*' 60 '*' 60 \
-		 '+' $${m2} '*' 60 '+' $${s2}`; \
-total_seconds=`$(EXPR) $${t2_secs} '-' $${t1_secs}`; \
-if [ "$${total_seconds}" -lt 0 ] ; then total_seconds=0; fi; \
-t_hour=`$(EXPR) $${total_seconds} '/' '(' 60 '*' 60 ')'`h; \
-t_min=`$(EXPR) '(' $${total_seconds} '%' '(' 60 '*' 60 ')' ')' '/' 60`m; \
-t_sec=`$(EXPR) $${total_seconds} '%' 60`s; \
-time_used=$${t_sec}; \
-if [ "$${t_hour}" != "0h" ] ; then \
-time_used=$${t_hour}$${t_min}$${t_sec}; \
-elif [ "$${t_min}" != "0m" ] ; then \
-time_used=$${t_min}$${t_sec}; \
-else \
-time_used=$${t_sec}; \
-fi; \
-$(PRINTF) "  Timing: %05d seconds or %s for %s\n" \
-    $${total_seconds} $${time_used} $${timing_id}
-endef
-
-endif # NO_TIMING
-
-# Given a SUBDIRS list, cd into them and make them
-#   SUBDIRS_MAKEFLAGS      Make settings for a subdir make
-#   SUBDIRS_MAKEFLAGS-$@   Make settings specific to this target
-define SUBDIRS-loop
-@$(ECHO) "Begin Processing SUBDIRS: $(SUBDIRS)"
-@for i in DUMMY $(SUBDIRS) ; do \
-  if [ "$$i" != "DUMMY" ] ; then \
-    $(ECHO) ">>>Recursively making "$$i" "$@" @ `$(DATE)` ..."; \
-    timing_id="$(TIMING_ID)-`$(BASENAME) $${i}`"; \
-    $(call TIMING_start,startTime); \
-    curDir=$(CURRENT_DIRECTORY); \
-    $(CD) $$i; $(MAKE) $@ TIMING_ID=$${timing_id} \
-			  $(SUBDIRS_MAKEFLAGS) \
-			  $(SUBDIRS_MAKEFLAGS-$@) \
-			  FULL_VERSION=$(FULL_VERSION) \
-			  RELEASE=$(RELEASE) || exit 1; \
-	       $(CD) $${curDir}; \
-    $(call TIMING_end,startTime,timing_id); \
-    $(ECHO) "<<<Finished Recursively making "$$i" "$@" @ `$(DATE)`." ; \
-  fi ; \
-done
-@$(ECHO) "Done Processing SUBDIRS: $(SUBDIRS)"
-endef
-
-# Given a OTHERSUBDIRS list, cd into them and make them (extra loop define)
-#   OTHERSUBDIRS_MAKEFLAGS      Make settings for a subdir make
-define OTHERSUBDIRS-loop
-@$(ECHO) "Begin Processing OTHERSUBDIRS: $(OTHERSUBDIRS)"
-@for i in DUMMY $(OTHERSUBDIRS) ; do \
-  if [ "$$i" != "DUMMY" ] ; then \
-    $(ECHO) ">>>Recursively making "$$i" "$@" @ `$(DATE)` ..."; \
-    timing_id="$(TIMING_ID)-`$(BASENAME) $${i}`"; \
-    $(call TIMING_start,startTime); \
-    curDir=$(CURRENT_DIRECTORY); \
-    $(CD) $$i; $(MAKE) $@ TIMING_ID=$${timing_id} \
-		          $(OTHERSUBDIRS_MAKEFLAGS) \
-			  FULL_VERSION=$(FULL_VERSION) \
-			  RELEASE=$(RELEASE) || exit 1; \
-	       $(CD) $${curDir}; \
-    $(call TIMING_end,startTime,timing_id); \
-    $(ECHO) "<<<Finished Recursively making "$$i" "$@" @ `$(DATE)`." ; \
-  fi ; \
-done
-@$(ECHO) "Done Processing OTHERSUBDIRS: $(OTHERSUBDIRS)"
-endef
 
 #
 # Create BYFILE OPT and DBG settings, if CFLAGS_OPT/foobar.o is set then it is
@@ -574,9 +500,11 @@ CXXFLAGS_$(VARIANT)/BYFILE  = $(CXXFLAGS_$(VARIANT)/$(@F)) \
 #
 # Tool flags
 #
+# EXTRA_CFLAGS are used to define cross-compilation options
+#
 ASFLAGS         = $(ASFLAGS_$(VARIANT)) $(ASFLAGS_COMMON) $(OTHER_ASFLAGS)
-CFLAGS          = $(CFLAGS_$(VARIANT)/BYFILE)   $(CFLAGS_COMMON) $(OTHER_CFLAGS)
-CXXFLAGS        = $(CXXFLAGS_$(VARIANT)/BYFILE) $(CXXFLAGS_COMMON) $(OTHER_CXXFLAGS)
+CFLAGS          = $(CFLAGS_$(VARIANT)/BYFILE)   $(CFLAGS_COMMON) $(OTHER_CFLAGS) $(EXTRA_CFLAGS)
+CXXFLAGS        = $(CXXFLAGS_$(VARIANT)/BYFILE) $(CXXFLAGS_COMMON) $(OTHER_CXXFLAGS) $(EXTRA_CFLAGS)
 CPPFLAGS        = $(CPPFLAGS_$(VARIANT)) $(CPPFLAGS_COMMON) $(OTHER_CPPFLAGS) \
 		  $(DEFINES) $(OPTIONS:%=-D%)
 LDFLAGS         = $(LDFLAGS_$(VARIANT)) $(LDFLAGS_COMMON) $(OTHER_LDFLAGS)
@@ -585,38 +513,6 @@ LINTFLAGS       = $(LINTFLAGS_$(VARIANT)) $(LINTFLAGS_COMMON) \
 		  $(OTHER_LINTFLAGS)
 
 VERSION_DEFINES = -DRELEASE='"$(RELEASE)"'
-
-# Note: As a rule, GNU Make rules should not appear in any of the 
-# Defs*.gmk files. These were added for Kestrel-Solaris and do address
-# a TeamWare bug. They should be moved elsewhere for Merlin.
-# 
-#  Override gnumake built-in rules which do sccs get operations badly.
-#  (They put the checked out code in the current directory, not in the
-#  directory of the original file.) 
-# Since this is a symptom of a teamware failure, complain and die on the spot.
-
-# This message immediately goes to stdout and the build terminates.
-define SCCS-trouble
-$(error  \
-"ERROR: File $@ referenced while building in $(CURRENT_DIRECTORY) \
- is out of date with respect to its SCCS file $<. \
- This can happen from an unresolved Teamware conflict, a file movement, or \
- a failure in which SCCS files are updated but the 'sccs get' was not done. \
- You should double check for other out of date files in your workspace. \
- Or run: cd $(TOPDIR) && $(MAKE) sccs_get")
-endef
-
-%:: s.%
-	@$(SCCS-trouble)
-%:: SCCS/s.%
-	@$(SCCS-trouble)
-	@$(ECHO) "         is out of date with respect to its SCCS file." >> $(WARNING_FILE)
-	@$(ECHO) "         This file may be from an unresolved Teamware conflict." >> $(WARNING_FILE)
-	@$(ECHO) "         This is also a symptom of a Teamware bringover/putback failure" >> $(WARNING_FILE)
-	@$(ECHO) "         in which SCCS files are updated but not checked out." >> $(WARNING_FILE)
-	@$(ECHO) "         Check for other out of date files in your workspace." >> $(WARNING_FILE)
-	@$(ECHO) "" >> $(WARNING_FILE)
-	@#exit 666
 
 ifdef INSANE
   export INSANE
@@ -628,10 +524,31 @@ else
   COPYRIGHT_YEAR := $(shell $(DATE) '+%Y')
 endif
 
+ifndef OPENJDK
+include $(JDK_TOPDIR)/make/closed/common/Defs.gmk
+endif
+
 # Install of imported file (JDK_IMPORT_PATH, or some other external location)
-define install-import-file
+define install-importonly-file
 @$(ECHO) "ASSEMBLY_IMPORT: $@"
-$(install-file)
+$(prep-target)
+$(CP) $< $@
+@if [ "$(PLATFORM)" = "linux" -a "$(@F)" = "libjvm.so" ] ; then     \
+  if [ -x /usr/sbin/selinuxenabled ] ; then                         \
+    /usr/sbin/selinuxenabled;                                       \
+    if [ $$? = 0 ] ; then                                           \
+      $(ECHO) "/usr/bin/chcon -t textrel_shlib_t $@";               \
+      /usr/bin/chcon -t textrel_shlib_t $@;                         \
+      if [ $$? != 0 ]; then                                         \
+        echo "ERROR: Cannot chcon $@";                              \
+      fi;                                                           \
+    fi;                                                             \
+  fi;                                                               \
+fi
+endef
+
+define install-import-file
+$(install-importonly-file)
 endef
 
 .PHONY: all build clean clobber

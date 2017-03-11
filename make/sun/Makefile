@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -42,12 +42,17 @@ ifneq ($(PLATFORM), windows)
   ifndef OPENJDK
     ifeq ($(PLATFORM), solaris)
       ifneq ($(ARCH), amd64)
-        DGA_SUBDIR = jdga
+        # Solaris 11 does not have support for new compilation of DGA code.
+        OS_VERSION = $(shell uname -r)
+        OS_MAJOR_VERSION := $(call MajorVersion,$(OS_VERSION))
+        OS_MINOR_VERSION := $(call MinorVersion,$(OS_VERSION))
+        ifeq ($(shell $(EXPR) $(OS_MAJOR_VERSION) == 5), 1)
+          ifeq ($(shell $(EXPR) $(OS_MINOR_VERSION) \<= 10), 1)
+            DGA_SUBDIR = jdga
+          endif
+        endif
       endif
     endif
-  endif
-  ifeq ($(MOTIF_REQUIRED), true)
-    MOTIF_SUBDIRS   = motif12 motif21
   endif
   HEADLESS_SUBDIR = headless
   XAWT_SUBDIR     = xawt
@@ -61,12 +66,29 @@ ifdef OPENJDK
 else
   RENDER_SUBDIR = dcpr
 endif
-SUBDIRS = jar security javazic misc net audio $(RENDER_SUBDIR) image \
-	  awt splashscreen $(XAWT_SUBDIR) $(MOTIF_SUBDIRS) \
-          $(HEADLESS_SUBDIR) $(DGA_SUBDIR) \
-	  font jpeg cmm applet rmi $(JDBC_SUBDIR) \
-	  jawt text nio launcher management $(ORG_SUBDIR) \
-          native2ascii serialver tools jconsole
+
+# nio need to be compiled before awt to have all charsets ready
+SUBDIRS            = jar security javazic misc net nio text launcher
+
+ifdef BUILD_HEADLESS_ONLY
+  DISPLAY_LIBS = awt $(HEADLESS_SUBDIR)
+  DISPLAY_TOOLS = 
+else
+  DISPLAY_LIBS = awt splashscreen $(XAWT_SUBDIR) $(HEADLESS_SUBDIR)
+  DISPLAY_TOOLS = applet
+endif
+SUBDIRS_desktop    = audio $(RENDER_SUBDIR) image \
+                     $(DISPLAY_LIBS) $(DGA_SUBDIR) \
+                     jawt font jpeg cmm $(DISPLAY_TOOLS) beans
+SUBDIRS_management = management
+SUBDIRS_misc       = $(ORG_SUBDIR) rmi $(JDBC_SUBDIR) tracing
+SUBDIRS_tools      = native2ascii serialver tools jconsole
+
+ifndef OPENJDK
+  SUBDIRS += usagetracker
+endif
+
+include $(BUILDDIR)/common/Subdirs.gmk
 
 all build clean clobber::
 	$(SUBDIRS-loop)

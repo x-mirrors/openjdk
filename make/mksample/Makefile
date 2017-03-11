@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -37,12 +37,17 @@ else
   WEBSERVICES_SUBDIR = webservices
 endif
 
-SUBDIRS = nio jmx scripting $(WEBSERVICES_SUBDIR) nbproject
+SUBDIRS =
+SUBDIRS_misc = nio scripting nbproject forkjoin
+SUBDIRS_enterprise = $(WEBSERVICES_SUBDIR)
+SUBDIRS_management = jmx
 
 # include dtrace samples in Solaris builds
 ifeq ($(PLATFORM), solaris) 
 	SUBDIRS += dtrace
 endif
+
+include $(BUILDDIR)/common/Subdirs.gmk
 
 all build clean clobber::
 	$(SUBDIRS-loop)

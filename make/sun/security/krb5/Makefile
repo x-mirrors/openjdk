@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -76,4 +76,11 @@ ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS = $(JVMLIB)
 else
   OTHER_LDLIBS = -ldl $(JVMLIB)
+endif
+
+build:
+ifeq ($(PLATFORM),windows)
+	$(call make-launcher, kinit, sun.security.krb5.internal.tools.Kinit, , )
+	$(call make-launcher, klist, sun.security.krb5.internal.tools.Klist, , )
+	$(call make-launcher, ktab, sun.security.krb5.internal.tools.Ktab, , )
 endif

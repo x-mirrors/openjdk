@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@ DEMO_ROOT       = $(SHARE_SRC)/classes
 DEMO_PKGDIR     = com/sun/tools/example
 DEMO_TOPFILES   = ./com/sun/tools/example/README
 DEMO_DESTDIR    = $(DEMODIR)/jpda
+DEMO_JAR_NAME   = examples.jar
+DEMO_ONLY_SRC   = true
 
 #
 # Demo jar building rules.

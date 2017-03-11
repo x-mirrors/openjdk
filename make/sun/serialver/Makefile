@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,14 @@ PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk
 
 #
+# This program must contain a manifest that defines the execution level
+# needed to follow standard Vista User Access Control Guidelines
+# This must be set before Program.gmk is included
+#
+BUILD_MANIFEST=true
+
+
+#
 # Files
 #
 AUTO_FILES_JAVA_DIRS = sun/tools/serialver
@@ -41,7 +49,7 @@ AUTO_FILES_JAVA_DIRS = sun/tools/serialver
 # Resources
 #
 LOCALE_SET_DEFINITION = jdk
-RESOURCE_BUNDLES_PROPERTIES = $(PKGDIR)/resources/serialver.properties 
+RESOURCE_BUNDLES_UNCOMPILED_PROPERTIES = $(PKGDIR)/resources/serialver.properties 
 
 #
 # Rules

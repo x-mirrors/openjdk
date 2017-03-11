@@ -30,10 +30,12 @@
 #
 JAVA_JAVA_java = \
     java/lang/Object.java \
+    java/lang/AutoCloseable.java \
     java/lang/Class.java \
     java/lang/Thread.java \
     java/lang/Character.java \
     java/lang/CharacterData.java \
+    java/lang/CharacterName.java \
     sun/misc/ASCIICaseInsensitiveComparator.java \
     sun/misc/VM.java \
     sun/misc/Signal.java \
@@ -77,6 +79,7 @@ JAVA_JAVA_java = \
     java/lang/Compiler.java \
     java/lang/Throwable.java \
         java/lang/Exception.java \
+	    java/lang/ReflectiveOperationException.java \
 	    java/lang/IllegalAccessException.java \
 	    java/lang/InstantiationException.java \
 	    java/lang/ClassNotFoundException.java \
@@ -134,6 +137,7 @@ JAVA_JAVA_java = \
     java/lang/Comparable.java \
     java/lang/Readable.java \
     java/lang/Override.java \
+    java/lang/SafeVarargs.java \
     java/lang/SuppressWarnings.java \
     java/lang/ref/Reference.java \
         java/lang/ref/SoftReference.java \
@@ -180,10 +184,22 @@ JAVA_JAVA_java = \
         java/util/MissingFormatWidthException.java \
         java/util/UnknownFormatConversionException.java \
         java/util/UnknownFormatFlagsException.java \
+    java/util/IllformedLocaleException.java \
     java/util/FormatterClosedException.java \
     java/util/ListResourceBundle.java \
         sun/util/EmptyListResourceBundle.java \
     java/util/Locale.java \
+        sun/util/locale/BaseLocale.java \
+        sun/util/locale/Extension.java \
+        sun/util/locale/InternalLocaleBuilder.java \
+        sun/util/locale/LanguageTag.java \
+        sun/util/locale/LocaleExtensions.java \
+        sun/util/locale/LocaleObjectCache.java \
+        sun/util/locale/LocaleSyntaxException.java \
+        sun/util/locale/LocaleUtils.java \
+        sun/util/locale/ParseStatus.java \
+        sun/util/locale/StringTokenIterator.java \
+        sun/util/locale/UnicodeLocaleExtension.java \
     java/util/LocaleISOData.java \
         sun/util/LocaleServiceProviderPool.java \
 	sun/util/LocaleDataMetaInfo.java \
@@ -250,11 +266,15 @@ JAVA_JAVA_java = \
 	java/util/IdentityHashMap.java \
 	java/util/EnumMap.java \
     java/util/Arrays.java \
+    java/util/DualPivotQuicksort.java \
+    java/util/TimSort.java \
+    java/util/ComparableTimSort.java \
     java/util/ConcurrentModificationException.java \
     java/util/ServiceLoader.java \
     java/util/ServiceConfigurationError.java \
     java/util/Timer.java \
     java/util/TimerTask.java \
+    java/util/Objects.java \
     java/util/UUID.java \
     java/util/concurrent/AbstractExecutorService.java \
     java/util/concurrent/ArrayBlockingQueue.java \
@@ -265,6 +285,7 @@ JAVA_JAVA_java = \
     java/util/concurrent/CancellationException.java \
     java/util/concurrent/CompletionService.java \
     java/util/concurrent/ConcurrentHashMap.java \
+    java/util/concurrent/ConcurrentLinkedDeque.java \
     java/util/concurrent/ConcurrentLinkedQueue.java \
     java/util/concurrent/ConcurrentMap.java \
     java/util/concurrent/ConcurrentNavigableMap.java \
@@ -282,11 +303,18 @@ JAVA_JAVA_java = \
     java/util/concurrent/ExecutorService.java \
     java/util/concurrent/ExecutorCompletionService.java \
     java/util/concurrent/Executors.java \
+    java/util/concurrent/ForkJoinPool.java \
+    java/util/concurrent/ForkJoinTask.java \
+    java/util/concurrent/ForkJoinWorkerThread.java \
     java/util/concurrent/Future.java \
     java/util/concurrent/FutureTask.java \
     java/util/concurrent/LinkedBlockingDeque.java \
     java/util/concurrent/LinkedBlockingQueue.java \
+    java/util/concurrent/LinkedTransferQueue.java \
+    java/util/concurrent/Phaser.java \
     java/util/concurrent/PriorityBlockingQueue.java \
+    java/util/concurrent/RecursiveAction.java \
+    java/util/concurrent/RecursiveTask.java \
     java/util/concurrent/RejectedExecutionException.java \
     java/util/concurrent/RejectedExecutionHandler.java \
     java/util/concurrent/RunnableFuture.java \
@@ -297,9 +325,11 @@ JAVA_JAVA_java = \
     java/util/concurrent/Semaphore.java \
     java/util/concurrent/SynchronousQueue.java \
     java/util/concurrent/ThreadFactory.java \
+    java/util/concurrent/ThreadLocalRandom.java \
     java/util/concurrent/ThreadPoolExecutor.java \
     java/util/concurrent/TimeUnit.java \
     java/util/concurrent/TimeoutException.java \
+    java/util/concurrent/TransferQueue.java \
     java/util/concurrent/atomic/AtomicBoolean.java \
     java/util/concurrent/atomic/AtomicInteger.java \
     java/util/concurrent/atomic/AtomicIntegerArray.java \
@@ -326,6 +356,7 @@ JAVA_JAVA_java = \
     java/util/regex/Matcher.java \
     java/util/regex/MatchResult.java \
     java/util/regex/ASCII.java \
+    java/util/regex/UnicodeProp.java \
     java/util/regex/PatternSyntaxException.java \
     java/util/prefs/Preferences.java \
         java/util/prefs/AbstractPreferences.java \
@@ -444,11 +475,12 @@ JAVA_JAVA_java = \
     sun/misc/MessageUtils.java \
     sun/misc/GC.java \
     sun/misc/Service.java \
-    sun/misc/JavaAWTAccess.java \
     sun/misc/JavaLangAccess.java \
     sun/misc/JavaIOAccess.java \
-    sun/misc/JavaIODeleteOnExitAccess.java \
     sun/misc/JavaIOFileDescriptorAccess.java \
+    sun/misc/JavaNioAccess.java \
+    sun/misc/Perf.java \
+    sun/misc/PerfCounter.java \
     sun/net/www/protocol/jar/Handler.java \
     sun/net/www/protocol/jar/JarURLConnection.java \
     sun/net/www/protocol/file/Handler.java \

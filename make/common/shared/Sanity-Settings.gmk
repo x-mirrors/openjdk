@@ -24,12 +24,6 @@
 #
 
 #
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
-#
 # Shared sanity settings file. Fills in the variable ALL_SETTINGS.
 #
 
@@ -102,19 +96,19 @@ ifeq ($(PLATFORM),solaris)
   endif
 endif
 ifeq ($(PLATFORM),windows)
-  ALL_SETTINGS+=$(call addAltSetting,MSVCRT_DLL_PATH)
   ifneq ($(MSVCRNN_DLL),)
-    ALL_SETTINGS+=$(call addAltSetting,MSVCR71_DLL_PATH)
-    ALL_SETTINGS+=$(call addAltSetting,MSVCR100_DLL_PATH)
+    ALL_SETTINGS+=$(call addAltSetting,MSVCRNN_DLL_PATH)
   endif
-  ALL_SETTINGS+=$(call addAltSetting,MSDEVTOOLS_PATH)
-else
-  ALL_SETTINGS+=$(call addAltSetting,MOTIF_DIR)
-  ALL_SETTINGS+=$(call addOptionalSetting,MOTIF_REQUIRED)
+  ALL_SETTINGS+=$(call addRequiredSetting,INCLUDE)
+  ALL_SETTINGS+=$(call addRequiredSetting,LIB)
 endif
 ALL_SETTINGS+=$(call addOptionalSetting,COMPILER_NAME)
 ALL_SETTINGS+=$(call addOptionalSetting,COMPILER_VERSION)
-ALL_SETTINGS+=$(call addRequiredVersionSetting,CC_VER)
+ifdef REQUIRED_CC_VER
+  ALL_SETTINGS+=$(call addRequiredVersionSetting,CC_VER)
+else
+  ALL_SETTINGS+=$(call addOptionalSetting,CC_VER)
+endif
 ifeq ($(PLATFORM),solaris)
   ifeq ($(ARCH_DATA_MODEL), 32)
     ifndef OPENJDK
@@ -126,6 +120,9 @@ ALL_SETTINGS+=$(call addRequiredVersionSetting,ZIP_VER)
 ALL_SETTINGS+=$(call addRequiredVersionSetting,UNZIP_VER)
 ifeq ($(PLATFORM),windows)
   ALL_SETTINGS+=$(call addRequiredVersionSetting,LINK_VER)
+  ALL_SETTINGS+=$(call addRequiredSetting,CC)
+  ALL_SETTINGS+=$(call addRequiredSetting,LINK)
+  ALL_SETTINGS+=$(call addRequiredSetting,DUMPBIN)
 endif
 ALL_SETTINGS+=$(call addRequiredVersionSetting,ANT_VER)
 ALL_SETTINGS+=$(call addRequiredSetting,TEMPDIR)
@@ -147,6 +144,7 @@ endif
 ALL_SETTINGS+=$(call addOptionalSetting,FASTDEBUG)
 ALL_SETTINGS+=$(call addRequiredSetting,COMPILER_WARNINGS_FATAL)
 ALL_SETTINGS+=$(call addOptionalSetting,COMPILER_WARNING_LEVEL)
+ALL_SETTINGS+=$(call addOptionalSetting,SHOW_ALL_WARNINGS)
 ALL_SETTINGS+=$(call addRequiredSetting,INCREMENTAL_BUILD)
 ALL_SETTINGS+=$(call addOptionalSetting,CC_HIGHEST_OPT)
 ALL_SETTINGS+=$(call addOptionalSetting,CC_HIGHER_OPT)
@@ -187,7 +185,9 @@ ifeq ($(PLATFORM),windows)
   endif
 endif
 ifeq ($(PLATFORM),linux)
-  ALL_SETTINGS+=$(call addRequiredSetting,ALSA_VERSION)
+  ifdef REQUIRED_ALSA_VERSION
+    ALL_SETTINGS+=$(call addRequiredSetting,ALSA_VERSION)
+  endif
 endif
 ALL_SETTINGS+=$(call addRequiredVersionSetting,OS_VERSION)
 ALL_SETTINGS+=$(call addOptionalSetting,OS_VARIANT_NAME)
@@ -231,6 +231,15 @@ ifeq ($(PLATFORM),windows)
   ALL_SETTINGS+=$(call addAltSetting,DXSDK_PATH)
   ALL_SETTINGS+=$(call addAltSetting,DXSDK_INCLUDE_PATH)
   ALL_SETTINGS+=$(call addAltSetting,DXSDK_LIB_PATH)
+  ALL_SETTINGS+=$(call addAltSetting,WINDOWSSDKDIR)
+  ALL_SETTINGS+=$(call addRequiredSetting,RC)
+  ALL_SETTINGS+=$(call addRequiredSetting,REBASE)
+  ifndef OPENJDK
+    ALL_SETTINGS+=$(call addAltSetting,DEPLOY_MSSDK)
+    ALL_SETTINGS+=$(call addAltSetting,INSTALL_MSSDK)
+    ALL_SETTINGS+=$(call addAltSetting,WSCRIPT)
+    ALL_SETTINGS+=$(call addAltSetting,MSICERT)
+  endif
 endif
 ALL_SETTINGS+=$(call addAltSetting,CACERTS_FILE)
 ifndef OPENJDK
@@ -245,7 +254,6 @@ ifdef OPENJDK
   ALL_SETTINGS+=$(call addAltSetting,FREETYPE_HEADERS_PATH)
   ALL_SETTINGS+=$(call addAltSetting,FREETYPE_LIB_PATH)
 endif
-ALL_SETTINGS+=$(call addOptionalSetting,PLUG_LIBRARY_NAMES)
 
 ifdef OPENJDK
   ALL_SETTINGS+=$(call addHeading,Previous JDK Settings)

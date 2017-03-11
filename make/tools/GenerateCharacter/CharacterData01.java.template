@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,9 +72,35 @@ class CharacterData01 extends CharacterData {
         return props;
     }
 
+    int getPropertiesEx(int ch) {
+        char offset = (char)ch;
+        int props = $$LookupEx(offset);
+        return props;
+    }
+
     int getType(int ch) {
         int props = getProperties(ch);
         return (props & $$maskType);
+    }
+
+    boolean isOtherLowercase(int ch) {
+        int props = getPropertiesEx(ch);
+        return (props & $$maskOtherLowercase) != 0;
+    }
+
+    boolean isOtherUppercase(int ch) {
+        int props = getPropertiesEx(ch);
+        return (props & $$maskOtherUppercase) != 0;
+    }
+ 
+    boolean isOtherAlphabetic(int ch) {
+        int props = getPropertiesEx(ch);
+        return (props & $$maskOtherAlphabetic) != 0;
+    }
+
+    boolean isIdeographic(int ch) {
+        int props = getPropertiesEx(ch);
+        return (props & $$maskIdeographic) != 0;
     }
 
     boolean isJavaIdentifierStart(int ch) {
@@ -218,6 +244,79 @@ class CharacterData01 extends CharacterData {
             case 0x10132: retval = 80000; break;   // AEGEAN NUMBER EIGHTY THOUSAND
             case 0x10133: retval = 90000; break;   // AEGEAN NUMBER NINETY THOUSAND
             case 0x10323: retval = 50; break;      // OLD ITALIC NUMERAL FIFTY
+
+            case 0x010144: retval = 50; break;     // ACROPHONIC ATTIC FIFTY
+            case 0x010145: retval = 500; break;    // ACROPHONIC ATTIC FIVE HUNDRED
+            case 0x010146: retval = 5000; break;   // ACROPHONIC ATTIC FIVE THOUSAND
+            case 0x010147: retval = 50000; break;  // ACROPHONIC ATTIC FIFTY THOUSAND
+            case 0x01014A: retval = 50; break;     // ACROPHONIC ATTIC FIFTY TALENTS
+            case 0x01014B: retval = 100; break;    // ACROPHONIC ATTIC ONE HUNDRED TALENTS
+            case 0x01014C: retval = 500; break;    // ACROPHONIC ATTIC FIVE HUNDRED TALENTS
+            case 0x01014D: retval = 1000; break;   // ACROPHONIC ATTIC ONE THOUSAND TALENTS
+            case 0x01014E: retval = 5000; break;   // ACROPHONIC ATTIC FIVE THOUSAND TALENTS
+            case 0x010151: retval = 50; break;     // ACROPHONIC ATTIC FIFTY STATERS
+            case 0x010152: retval = 100; break;    // ACROPHONIC ATTIC ONE HUNDRED STATERS
+            case 0x010153: retval = 500; break;    // ACROPHONIC ATTIC FIVE HUNDRED STATERS
+            case 0x010154: retval = 1000; break;   // ACROPHONIC ATTIC ONE THOUSAND STATERS
+            case 0x010155: retval = 10000; break;  // ACROPHONIC ATTIC TEN THOUSAND STATERS
+            case 0x010156: retval = 50000; break;  // ACROPHONIC ATTIC FIFTY THOUSAND STATERS
+            case 0x010166: retval = 50; break;     // ACROPHONIC TROEZENIAN FIFTY
+            case 0x010167: retval = 50; break;     // ACROPHONIC TROEZENIAN FIFTY ALTERNATE FORM
+            case 0x010168: retval = 50; break;     // ACROPHONIC HERMIONIAN FIFTY
+            case 0x010169: retval = 50; break;     // ACROPHONIC THESPIAN FIFTY
+            case 0x01016A: retval = 100; break;    // ACROPHONIC THESPIAN ONE HUNDRED
+            case 0x01016B: retval = 300; break;    // ACROPHONIC THESPIAN THREE HUNDRED
+            case 0x01016C: retval = 500; break;    // ACROPHONIC EPIDAUREAN FIVE HUNDRED
+            case 0x01016D: retval = 500; break;    // ACROPHONIC TROEZENIAN FIVE HUNDRED
+            case 0x01016E: retval = 500; break;    // ACROPHONIC THESPIAN FIVE HUNDRED
+            case 0x01016F: retval = 500; break;    // ACROPHONIC CARYSTIAN FIVE HUNDRED
+            case 0x010170: retval = 500; break;    // ACROPHONIC NAXIAN FIVE HUNDRED
+            case 0x010171: retval = 1000; break;   // ACROPHONIC THESPIAN ONE THOUSAND
+            case 0x010172: retval = 5000; break;   // ACROPHONIC THESPIAN FIVE THOUSAND
+            case 0x010174: retval = 50; break;     // ACROPHONIC STRATIAN FIFTY MNAS
+            case 0x010341: retval = 90; break;     // GOTHIC LETTER NINETY
+            case 0x01034A: retval = 900; break;    // GOTHIC LETTER NINE HUNDRED
+            case 0x0103D5: retval = 100; break;    // OLD PERSIAN NUMBER HUNDRED
+            case 0x01085D: retval = 100; break;    // IMPERIAL ARAMAIC NUMBER ONE HUNDRED
+            case 0x01085E: retval = 1000; break;   // IMPERIAL ARAMAIC NUMBER ONE THOUSAND
+            case 0x01085F: retval = 10000; break;  // IMPERIAL ARAMAIC NUMBER TEN THOUSAND
+            case 0x010919: retval = 100; break;    // PHOENICIAN NUMBER ONE HUNDRED
+            case 0x010A46: retval = 100; break;    // KHAROSHTHI NUMBER ONE HUNDRED
+            case 0x010A47: retval = 1000; break;   // KHAROSHTHI NUMBER ONE THOUSAND
+            case 0x010A7E: retval = 50; break;     // OLD SOUTH ARABIAN NUMBER FIFTY
+            case 0x010B5E: retval = 100; break;    // INSCRIPTIONAL PARTHIAN NUMBER ONE HUNDRED
+            case 0x010B5F: retval = 1000; break;   // INSCRIPTIONAL PARTHIAN NUMBER ONE THOUSAND
+            case 0x010B7E: retval = 100; break;    // INSCRIPTIONAL PAHLAVI NUMBER ONE HUNDRED
+            case 0x010B7F: retval = 1000; break;   // INSCRIPTIONAL PAHLAVI NUMBER ONE THOUSAND
+            case 0x010E6C: retval = 40; break;     // RUMI NUMBER FORTY
+            case 0x010E6D: retval = 50; break;     // RUMI NUMBER FIFTY
+            case 0x010E6E: retval = 60; break;     // RUMI NUMBER SIXTY
+            case 0x010E6F: retval = 70; break;     // RUMI NUMBER SEVENTY
+            case 0x010E70: retval = 80; break;     // RUMI NUMBER EIGHTY
+            case 0x010E71: retval = 90; break;     // RUMI NUMBER NINETY
+            case 0x010E72: retval = 100; break;    // RUMI NUMBER ONE HUNDRED
+            case 0x010E73: retval = 200; break;    // RUMI NUMBER TWO HUNDRED
+            case 0x010E74: retval = 300; break;    // RUMI NUMBER THREE HUNDRED
+            case 0x010E75: retval = 400; break;    // RUMI NUMBER FOUR HUNDRED
+            case 0x010E76: retval = 500; break;    // RUMI NUMBER FIVE HUNDRED
+            case 0x010E77: retval = 600; break;    // RUMI NUMBER SIX HUNDRED
+            case 0x010E78: retval = 700; break;    // RUMI NUMBER SEVEN HUNDRED
+            case 0x010E79: retval = 800; break;    // RUMI NUMBER EIGHT HUNDRED
+            case 0x010E7A: retval = 900; break;    // RUMI NUMBER NINE HUNDRED
+            case 0x01105E: retval = 40; break;     // BRAHMI NUMBER FORTY
+            case 0x01105F: retval = 50; break;     // BRAHMI NUMBER FIFTY
+            case 0x011060: retval = 60; break;     // BRAHMI NUMBER SIXTY
+            case 0x011061: retval = 70; break;     // BRAHMI NUMBER SEVENTY
+            case 0x011062: retval = 80; break;     // BRAHMI NUMBER EIGHTY
+            case 0x011063: retval = 90; break;     // BRAHMI NUMBER NINETY
+            case 0x011064: retval = 100; break;    // BRAHMI NUMBER ONE HUNDRED
+            case 0x011065: retval = 1000; break;   // BRAHMI NUMBER ONE THOUSAND
+            case 0x01D36C: retval = 40; break;     // COUNTING ROD TENS DIGIT FOUR
+            case 0x01D36D: retval = 50; break;     // COUNTING ROD TENS DIGIT FIVE
+            case 0x01D36E: retval = 60; break;     // COUNTING ROD TENS DIGIT SIX
+            case 0x01D36F: retval = 70; break;     // COUNTING ROD TENS DIGIT SEVEN
+            case 0x01D370: retval = 80; break;     // COUNTING ROD TENS DIGIT EIGHT
+            case 0x01D371: retval = 90; break;     // COUNTING ROD TENS DIGIT NINE
             default: retval = -2; break;
             }
             

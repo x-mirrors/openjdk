@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,19 +23,11 @@
 # questions.
 #
 
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
 # Define public interface.
 
 SUNWprivate_1.1 {
 	global:
 		JNI_OnLoad;
-                Java_java_net_AbstractPlainDatagramSocketImpl_init;
-                Java_java_net_AbstractPlainDatagramSocketImpl_dataAvailable;
 		Java_java_net_PlainSocketImpl_socketListen;
 		Java_java_net_PlainDatagramSocketImpl_getTTL;
 		Java_java_net_PlainDatagramSocketImpl_init;
@@ -65,7 +57,7 @@ SUNWprivate_1.1 {
 		Java_java_net_Inet6AddressImpl_isReachable0;
 		Java_java_net_NetworkInterface_init;
 		Java_java_net_NetworkInterface_getByName0;
-		Java_java_net_NetworkInterface_getByIndex;
+		Java_java_net_NetworkInterface_getByIndex0;
 		Java_java_net_NetworkInterface_getByInetAddress0;
 		Java_java_net_NetworkInterface_getAll;
 		Java_java_net_NetworkInterface_isUp0;
@@ -96,6 +88,8 @@ SUNWprivate_1.1 {
 		Java_java_net_PlainDatagramSocketImpl_setTimeToLive;
 		Java_sun_net_dns_ResolverConfigurationImpl_localDomain0;
 		Java_sun_net_dns_ResolverConfigurationImpl_fallbackDomain0;
+		Java_sun_net_sdp_SdpSupport_convert0;
+		Java_sun_net_sdp_SdpSupport_create0;
 		Java_sun_net_spi_DefaultProxySelector_init;
 		Java_sun_net_spi_DefaultProxySelector_getSystemProxy;
 		NET_AllocSockaddr;
@@ -109,10 +103,7 @@ SUNWprivate_1.1 {
 		NET_MapSocketOption;
 		NET_Wait;
                 ipv6_available;
-		setInetAddress_addr;
-		setInetAddress_family;
-		getInetAddress_addr;
-		getInetAddress_family;
+
 	local:
 		*;
 };

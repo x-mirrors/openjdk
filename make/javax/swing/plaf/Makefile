@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -27,10 +27,7 @@ BUILDDIR  = ../../..
 PACKAGE   = javax.swing.plaf
 PRODUCT   = com
 SWING_SRC = $(SHARE_SRC)/classes/javax/swing
-
 include $(BUILDDIR)/common/Defs.gmk
-LANGUAGE_VERSION = -source 6
-CLASS_VERSION = -target 6
 
 #
 # Files
@@ -53,6 +50,9 @@ ifneq ($(PLATFORM), windows)
     MISC_FILES += $(MISC_SWING_FILES_UNIX)
 endif
 
+NIMBUS_GENSRC_DIR = $(GENSRCDIR)/javax/swing/plaf/nimbus
+NIMBUS_SKIN_FILE = $(SWING_SRC)/plaf/nimbus/skin.laf
+NIMBUS_GENERATOR_JAR = $(BUILDTOOLJARDIR)/generatenimbus.jar
 
 FILES_java = $(FILES_SWING_java)
 
@@ -77,6 +77,24 @@ endif
 # Process LOGO_ICONS and Motif Icons first.
 #
 build: $(LOGO_ICONS) $(MISC_SWING_FILES_MOTIF_GIF) $(MISC_SWING_FILES_MOTIF_PNG) other_files
+
+$(NIMBUS_GENSRC_DIR): $(NIMBUS_SKIN_FILE) $(NIMBUS_GENERATOR_JAR)
+	@$(ECHO) "Generating Nimbus source files:"
+	$(RM) -r $(NIMBUS_GENSRC_DIR)
+	$(BOOT_JAVA_CMD) -jar $(NIMBUS_GENERATOR_JAR) \
+	    -skinFile $(NIMBUS_SKIN_FILE) -buildDir $(GENSRCDIR) \
+	    -packagePrefix $(PACKAGE).nimbus -lafName Nimbus
+	@$(ECHO) "Finished generating Nimbus source files"
+
+clean:: classes.clean
+	$(RM) -r $(NIMBUS_GENSRC_DIR)
+
+#
+# Include
+#
+ifndef DISABLE_NIMBUS
+    CLASSES_INIT = $(NIMBUS_GENSRC_DIR)
+endif
 
 include $(BUILDDIR)/common/Classes.gmk
 

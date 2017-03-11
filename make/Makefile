@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -21,12 +21,6 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-#
-
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
 #
 
 #
@@ -103,11 +97,8 @@ JDK_IMPORT_PATH.desc       = JDK used to import components of the build
 COMPILER_PATH.desc         = Compiler install directory
 CACERTS_FILE.desc          = Location of certificates file
 DEVTOOLS_PATH.desc         = Directory containing zip and unzip
-MOTIF_DIR.desc             = Root directory for motif directories
 CUPS_HEADERS_PATH.desc     = Include directory location for CUPS header files
 DXSDK_PATH.desc            = Root directory of DirectX SDK
-MSDEVTOOLS_PATH.desc       = Root directory of VC++ tools (e.g. rc.exe)
-MSVCRT_DLL_PATH.desc       = Directory containing mscvrt.dll
 
 # Make variables to print out (description and value)
 VARIABLE_PRINTVAL_LIST +=       \
@@ -122,8 +113,7 @@ VARIABLE_PRINTVAL_LIST +=       \
     JDK_IMPORT_PATH             \
     COMPILER_PATH               \
     CACERTS_FILE                \
-    DEVTOOLS_PATH               \
-    MOTIF_DIR
+    DEVTOOLS_PATH
 
 # Make variables that should refer to directories that exist
 VARIABLE_CHECKDIR_LIST +=       \
@@ -141,14 +131,10 @@ VARIABLE_CHECKFIL_LIST +=       \
 ifeq ($(PLATFORM), windows)
 
 VARIABLE_PRINTVAL_LIST +=       \
-    DXSDK_PATH                  \
-    MSDEVTOOLS_PATH             \
-    MSVCRT_DLL_PATH
+    DXSDK_PATH
 
 VARIABLE_CHECKDIR_LIST +=       \
-    DXSDK_PATH                  \
-    MSDEVTOOLS_PATH             \
-    MSVCRT_DLL_PATH
+    DXSDK_PATH
 
 endif
 
@@ -246,7 +232,17 @@ import_product:
 
 all build:: sanity-all post-sanity-all
 
-SUBDIRS    = tools java javax org sun sunw com jpda mkdemo mksample launchers
+SUBDIRS       = tools java javax sun com
+SUBDIRS_tools = launchers
+SUBDIRS_misc  = org sunw jpda mkdemo mksample
+
+# Alternate classes implementation
+ifndef OPENJDK
+  SUBDIRS_misc += altclasses
+endif
+
+include $(BUILDDIR)/common/Subdirs.gmk
+
 all build::
 	$(SUBDIRS-loop)
 
@@ -277,21 +273,6 @@ include $(BUILDDIR)/common/Sanity.gmk
 
 $(OUTPUTDIR) $(TEMPDIR):
 	$(MKDIR) -p $@
-
-# cleanup everything. If the workspace is not being built by the control
-# workspace, and if it is a Teamware workspace, then see if there are
-# any files which are not under SCCS control.
-clean clobber:: 
-ifndef EXTERNALSANITYCONTROL
-	@if [ -d $(TOPDIR)/Codemgr_wsdata ]; then \
-	  $(ECHO) '\nPerforming workspace scan for remnant files.\n' \
-		'  Any files listed below are not under SCCS control in the workspace\n' \
-		'  and you should review them and possibly remove them manually:' ; \
-	  $(FIND) $(TOPDIR)/make $(TOPDIR)/src -type f | \
-		$(SED) 's+SCCS/[ps]\.++' | $(SORT) | $(UNIQ) -c | $(NAWK) '$$1<2 {print $$2;}' ; \
-	  $(ECHO) 'End of workspace scan.' ; \
-	fi
-endif
 
 # this should be the last rule in this file:
 all::
@@ -335,12 +316,71 @@ else
 	$(ECHO) "Rule $@ does not apply on $(PLATFORM)-$(ARCH)"
 endif
 
+#
+# Test rule
+#
+
+.NOTPARALLEL: test_run
+
+test:
+	$(MAKE) test_run
+
+test_run: test_clean test_start test_summary
+
+test_start:
+	@$(ECHO) "Tests started at `$(DATE)`"
+
+test_clean:
+	$(RM) $(OUTPUTDIR)/test_failures.txt $(OUTPUTDIR)/test_log.txt
+
+test_summary: $(OUTPUTDIR)/test_failures.txt
+	@$(ECHO) "#################################################"
+	@$(ECHO) "Tests completed at `$(DATE)`"
+	@( $(EGREP) '^TEST STATS:' $(OUTPUTDIR)/test_log.txt \
+          || $(ECHO) "No TEST STATS seen in log" )
+	@$(ECHO) "For complete details see: $(OUTPUTDIR)/test_log.txt"
+	@$(ECHO) "#################################################"
+	@if [ -s $< ] ; then                                           \
+          $(ECHO) "ERROR: Test failure count: `$(CAT) $< | $(WC) -l`"; \
+          $(CAT) $<;                                                   \
+          exit 1;                                                      \
+        else                                                           \
+          $(ECHO) "Success! No failures detected";                     \
+        fi
+
+# Get failure list from log
+$(OUTPUTDIR)/test_failures.txt: $(OUTPUTDIR)/test_log.txt
+	@$(RM) $@
+	@( $(EGREP) '^FAILED:' $< || $(ECHO) "" ) | $(NAWK) 'length>0' > $@
+
+# Get log file of all tests run
+JDK_TO_TEST := $(shell 							\
+  if [ -d "$(ABS_OUTPUTDIR)/j2sdk-image" ] ; then 			\
+    $(ECHO) "$(ABS_OUTPUTDIR)/j2sdk-image"; 				\
+  elif [ -d "$(ABS_OUTPUTDIR)/bin" ] ; then 				\
+    $(ECHO) "$(ABS_OUTPUTDIR)"; 					\
+  elif [ "$(PRODUCT_HOME)" != "" -a -d "$(PRODUCT_HOME)/bin" ] ; then 	\
+    $(ECHO) "$(PRODUCT_HOME)"; 						\
+  fi 									\
+)
+
+TEST_TARGETS=jdk_all
+$(OUTPUTDIR)/test_log.txt:
+	$(RM) $@
+	( $(CD) ../test &&                                              \
+          $(MAKE) NO_STOPPING=- PRODUCT_HOME=$(JDK_TO_TEST) $(TEST_TARGETS) \
+        ) | tee $@
+
+#
 # JPRT rules
+#
+
 include jprt.gmk
 
 #
 # Phonies to avoid accidents.
 #
 .PHONY: all build clean clobber optimized debug fastdebug create_links \
-	import import_product import_fastdebug import_debug
+	import import_product import_fastdebug import_debug \
+	test test_run test_start test_clean test_summary
 

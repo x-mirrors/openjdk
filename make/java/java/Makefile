@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -198,12 +198,14 @@ INSTALL_DOT_LIB = true
 
 #
 # What to link?
+# On Windows, shell32 is not normally required and so it is delay loaded.
 #
 ifeq ($(PLATFORM),windows)
 OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlibm.lib \
-		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib
+		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib \
+		       shell32.lib delayimp.lib /DELAYLOAD:shell32.dll
 else
-OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) -lnsl -ldl \
+OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) -ldl \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
 endif
 
@@ -217,6 +219,8 @@ ifeq ($(PLATFORM), solaris)
 endif
 
 SUBDIRS = reflect
+include $(BUILDDIR)/common/Subdirs.gmk
+
 all build:
 	$(SUBDIRS-loop)
 clean clobber::
@@ -285,7 +289,7 @@ TZMAPFILE = $(PLATFORM_SRC)/lib/tzmappings
 
 $(TZMAP): $(TZMAPFILE)
 	$(install-file)
-	$(CHMOD) 444 $@
+	$(call chmod-file, 444)
 endif
 
 build: $(LIBDIR)/$(PROPS) $(LIBDIR)/$(CAL_PROPS) $(TZMAP)
@@ -315,7 +319,7 @@ $(CURDATA): \
 	$(BOOT_JAVA_CMD) -jar $(GENERATECURRENCYDATA_JARFILE) -o $@.temp \
 		< $(SHARE_SRC)/classes/java/util/CurrencyData.properties
 	$(MV) $@.temp $@
-	$(CHMOD) 444 $@
+	$(call chmod-file, 444)
 
 clean:: 
 	$(RM) $(CURDATA)
@@ -341,30 +345,35 @@ $(GENSRCDIR)/java/lang/CharacterDataLatin1.java \
 		-template $(CHARACTERDATA)/CharacterDataLatin1.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterDataLatin1.java -string \
 		-usecharforbyte -latin1 8
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 0 \
 		-template $(CHARACTERDATA)/CharacterData00.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData00.java -string \
 		-usecharforbyte 11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 1 \
 		-template $(CHARACTERDATA)/CharacterData01.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData01.java -string \
 		-usecharforbyte  11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 2 \
 		-template $(CHARACTERDATA)/CharacterData02.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData02.java -string \
 		-usecharforbyte 11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 14 \
 		-template $(CHARACTERDATA)/CharacterData0E.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData0E.java -string \
 		-usecharforbyte 11 4 1
 
@@ -381,6 +390,27 @@ clean::
 	$(RM) $(GENSRCDIR)/java/lang/CharacterDataPrivateUse.java
 
 #
+# Rules to generate classes/java/lang/uniName.dat
+#
+
+
+
+UNINAME = $(CLASSBINDIR)/java/lang/uniName.dat
+GENERATEUNINAME_JARFILE = $(BUILDTOOLJARDIR)/generatecharacter.jar
+
+build: $(UNINAME)
+
+$(UNINAME): $(UNICODEDATA)/UnicodeData.txt \
+	$(GENERATECHARACTER_JARFILE)
+	@$(prep-target)
+	$(BOOT_JAVA_CMD) -classpath $(GENERATECHARACTER_JARFILE) \
+	build.tools.generatecharacter.CharacterName \
+		$(UNICODEDATA)/UnicodeData.txt $(UNINAME)
+
+clean:: 
+	$(RM) $(UNINAME)
+
+#
 # End of rules to create $(GENSRCDIR)/java/lang/CharacterDataXX.java
 #
 
@@ -390,7 +420,7 @@ clean::
 LOCALES_GEN_SH = localelist.sh
 
 $(GENSRCDIR)/sun/util/CoreResourceBundleControl.java: \
-	$(SHARE_SRC)/classes/sun/util/CoreResourceBundleControl-XLocales.java $(LOCALES_GEN_SH)
+	$(SHARE_SRC)/classes/sun/util/CoreResourceBundleControl-XLocales.java.template $(LOCALES_GEN_SH)
 	@$(prep-target) 
 	NAWK="$(NAWK)" SED="$(SED)" $(SH) $(LOCALES_GEN_SH) "$(JRE_NONEXIST_LOCALES)" \
 		$< $@ 

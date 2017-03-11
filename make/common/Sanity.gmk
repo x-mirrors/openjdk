@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -21,12 +21,6 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-#
-
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
 #
 
 # Settings and rules to validate the JDK build environment.
@@ -97,28 +91,13 @@ sanity-all:: sanity-base \
     sane-ld_run_path \
     sane-alt_bootdir \
     sane-bootdir \
+    sane-local-bootdir \
     sane-alsa-headers
 
 ifdef OPENJDK
 sanity-all:: sane-freetype 
 endif
 
-# always check motif path on solaris
-ifeq ($(PLATFORM), solaris)
-sanity-all:: \
-    sane-motif
-endif
-
-# on Linux, only check motif path if we are not building it from scratch.
-#   (Which only happens with a full control build. The control makefiles are
-#    the files that set BUILD_MOTIF).
-#   We cannot sanity check something that has not been built yet. 
-ifeq ($(PLATFORM), linux)
-  ifneq ($(BUILD_MOTIF), true)
-sanity-all:: \
-    sane-motif
-  endif
-endif
 
 # Always check cups header paths on solaris & linux
 ifneq ($(PLATFORM), windows)

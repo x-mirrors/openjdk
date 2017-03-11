@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 #
 
 #
-# Makefile for native threads HPI.
+# Makefile for fdlibm
 #
 # Note:
 # The fdlibm libraries are built using special rules in Library.gmk.
@@ -45,6 +45,7 @@ FDLIBM_SRC = $(SHARE_SRC)/native/java/lang/fdlibm
 ifeq ($(PLATFORM),windows)
   # Turn all optimizations off
   OPTIMIZATION_LEVEL = NONE
+  FASTDEBUG_OPTIMIZATION_LEVEL = NONE
   OTHER_CFLAGS =
   CPPFLAGS_DBG += -DLOGGING
 endif
@@ -56,6 +57,7 @@ endif
 ifeq ($(PLATFORM),linux)
   # Turn all optimizations off
   OPTIMIZATION_LEVEL = NONE
+  FASTDEBUG_OPTIMIZATION_LEVEL = NONE
 endif
 
 #

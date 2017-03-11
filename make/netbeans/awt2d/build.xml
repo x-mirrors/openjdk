@@ -45,8 +45,6 @@
         <make-run target="all" dir="${make.dir}/sun/awt"/>
         <make-run target="all" dir="${make.dir}/sun/splashscreen"/>
         <make-run target="all" dir="${make.dir}/sun/xawt"/>
-        <make-run target="all" dir="${make.dir}/sun/motif12"/>
-        <make-run target="all" dir="${make.dir}/sun/motif21"/>
         <make-run target="all" dir="${make.dir}/sun/headless"/>
         <make-run target="all" dir="${make.dir}/sun/font"/>
         <make-run target="all" dir="${make.dir}/sun/jpeg"/>
@@ -54,6 +52,7 @@
         <make-run target="all" dir="${make.dir}/sun/jawt"/>
         <make-run target="all" dir="${make.dir}/sun/text"/>
         <make-run target="all" dir="${make.dir}/com/sun/image"/>
+        <make-run target="all" dir="${make.dir}/com/sun/java2d"/>
     </target>
 
     <target name="-build-make-windows" depends="-make.init" if="os.windows">
@@ -67,6 +66,7 @@
         <make-run target="all" dir="${make.dir}/sun/jawt"/>
         <make-run target="all" dir="${make.dir}/sun/text"/>
         <make-run target="all" dir="${make.dir}/com/sun/image"/>
+        <make-run target="all" dir="${make.dir}/com/sun/java2d"/>
     </target>
 
     <target name="-clean-make" depends="-make.init,-clean-docs-tests" if="use.make">
@@ -76,16 +76,14 @@
         <make-run target="clean" dir="${make.dir}/sun/awt"/>
         <make-run target="clean" dir="${make.dir}/sun/splashscreen"/>
         <make-run target="clean" dir="${make.dir}/sun/xawt"/>
-        <make-run target="clean" dir="${make.dir}/sun/motif12"/>
-        <make-run target="clean" dir="${make.dir}/sun/motif21"/>
         <make-run target="clean" dir="${make.dir}/sun/font"/>
         <make-run target="clean" dir="${make.dir}/sun/jpeg"/>
         <make-run target="clean" dir="${make.dir}/sun/cmm"/>
         <make-run target="clean" dir="${make.dir}/sun/jawt"/>
         <make-run target="clean" dir="${make.dir}/sun/text"/>
         <make-run target="clean" dir="${make.dir}/com/sun/image"/>
+        <make-run target="clean" dir="${make.dir}/com/sun/java2d"/>
         <make-run target="clean" dir="${make.dir}/mkdemo/jfc"/>
-        <delete file="${build.dir}/tmp/sun/sun.awt.X11/xawt/.gen_icons"/>
     </target>
     
     <target name="run" depends="-make.init">

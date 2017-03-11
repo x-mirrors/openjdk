@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2006, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,8 @@ else # !OPENJDK
     ICCPROFILE_SRC_DIR = $(CLOSED_SRC)/share/lib/cmm/kcms
 endif # OPENJDK
 
+include $(BUILDDIR)/common/Subdirs.gmk
+
 #
 # ICC Profiles used by the CMM.
 #
@@ -45,34 +47,24 @@ iccprofiles: $(ICCPROFILE_DEST_DIR)/sRGB.pf $(ICCPROFILE_DEST_DIR)/GRAY.pf \
 	     $(ICCPROFILE_DEST_DIR)/LINEAR_RGB.pf
 
 $(ICCPROFILE_DEST_DIR)/sRGB.pf: $(ICCPROFILE_SRC_DIR)/sRGB.pf
-	$(RM) $(ICCPROFILE_DEST_DIR)/sRGB.pf
-	-$(MKDIR) -p $(ICCPROFILE_DEST_DIR)
-	$(CP) $(ICCPROFILE_SRC_DIR)/sRGB.pf $(ICCPROFILE_DEST_DIR)
-	$(CHMOD) 444 $(ICCPROFILE_DEST_DIR)/sRGB.pf
+	$(install-file)
+	$(call chmod-file, 444)
 
 $(ICCPROFILE_DEST_DIR)/GRAY.pf: $(ICCPROFILE_SRC_DIR)/GRAY.pf
-	$(RM) $(ICCPROFILE_DEST_DIR)/GRAY.pf
-	-$(MKDIR) -p $(ICCPROFILE_DEST_DIR)
-	$(CP) $(ICCPROFILE_SRC_DIR)/GRAY.pf $(ICCPROFILE_DEST_DIR)
-	$(CHMOD) 444 $(ICCPROFILE_DEST_DIR)/GRAY.pf
+	$(install-file)
+	$(call chmod-file, 444)
 
 $(ICCPROFILE_DEST_DIR)/CIEXYZ.pf: $(ICCPROFILE_SRC_DIR)/CIEXYZ.pf
-	$(RM) $(ICCPROFILE_DEST_DIR)/CIEXYZ.pf
-	-$(MKDIR) -p $(ICCPROFILE_DEST_DIR)
-	$(CP) $(ICCPROFILE_SRC_DIR)/CIEXYZ.pf $(ICCPROFILE_DEST_DIR)
-	$(CHMOD) 444 $(ICCPROFILE_DEST_DIR)/CIEXYZ.pf
+	$(install-file)
+	$(call chmod-file, 444)
 
 $(ICCPROFILE_DEST_DIR)/PYCC.pf: $(ICCPROFILE_SRC_DIR)/PYCC.pf
-	$(RM) $(ICCPROFILE_DEST_DIR)/PYCC.pf
-	-$(MKDIR) -p $(ICCPROFILE_DEST_DIR)
-	$(CP) $(ICCPROFILE_SRC_DIR)/PYCC.pf $(ICCPROFILE_DEST_DIR)
-	$(CHMOD) 444 $(ICCPROFILE_DEST_DIR)/PYCC.pf
+	$(install-file)
+	$(call chmod-file, 444)
 
 $(ICCPROFILE_DEST_DIR)/LINEAR_RGB.pf: $(ICCPROFILE_SRC_DIR)/LINEAR_RGB.pf
-	$(RM) $(ICCPROFILE_DEST_DIR)/LINEAR_RGB.pf
-	-$(MKDIR) -p $(ICCPROFILE_DEST_DIR)
-	$(CP) $(ICCPROFILE_SRC_DIR)/LINEAR_RGB.pf $(ICCPROFILE_DEST_DIR)
-	$(CHMOD) 444 $(ICCPROFILE_DEST_DIR)/LINEAR_RGB.pf
+	$(install-file)
+	$(call chmod-file, 444)
 
 iccprofiles.clean:
 	$(RM) -r $(ICCPROFILE_DEST_DIR)

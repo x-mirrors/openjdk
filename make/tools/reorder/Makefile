@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -85,13 +85,6 @@ reorder.jar : $(REORDER_JAR)
 libs.reorder :
 ifeq ($(PLATFORM), solaris)
 	$(MAKE) LIBBLDDIR=java/zip        LIBTMPDIR=sun/java.util.zip/zip   reorder.lib
-ifdef BUILD_MOTIF21
-	$(MAKE) LIBBLDDIR=sun/motif21     LIBTMPDIR=sun/sun.awt/motif21     reorder.lib
-endif
-ifdef BUILD_MOTIF12
-	$(MAKE) LIBBLDDIR=sun/motif12     LIBTMPDIR=sun/sun.awt/motif12     reorder.lib
-endif
-	$(MAKE) LIBBLDDIR=java/hpi/native LIBTMPDIR=java/hpi/native_threads reorder.lib
 	$(MAKE) LIBBLDDIR=java/java       LIBTMPDIR=java/java.lang/java     reorder.lib
 	$(MAKE) LIBBLDDIR=java/nio        LIBTMPDIR=java/java.nio/nio       reorder.lib
 	$(MAKE) LIBBLDDIR=sun/font        LIBTMPDIR=sun/sun.awt.font/fontmanager reorder.lib
@@ -101,14 +94,7 @@ endif
 
 libs.copy:
 ifeq ($(PLATFORM), solaris)
-ifdef BUILD_MOTIF21
-	$(CP) $(OUTDIR)/reorder_sun_motif21-$(ARCH) ../../sun/motif21/reorder-$(ARCH)
-endif
-ifdef BUILD_MOTIF12
-	$(CP) $(OUTDIR)/reorder_sun_motif12-$(ARCH) ../../sun/motif12/reorder-$(ARCH)
-endif
 	$(CP) $(OUTDIR)/reorder_java_zip-$(ARCH) ../../java/zip/reorder-$(ARCH)
-	$(CP) $(OUTDIR)/reorder_java_hpi_native-$(ARCH) ../../java/hpi/native/reorder-$(ARCH)
 	$(CP) $(OUTDIR)/reorder_java_java-$(ARCH) ../../java/java/reorder-$(ARCH)
 	$(CP) $(OUTDIR)/reorder_sun_font-$(ARCH) ../../sun/font/reorder-$(ARCH)
 	$(CP) $(OUTDIR)/reorder_sun_jpeg-$(ARCH) ../../sun/jpeg/reorder-$(ARCH)
@@ -117,11 +103,6 @@ endif
 
 REORDER_LIB = $(OUTDIR)/reorder_$(subst /,_,$(LIBBLDDIR))-$(ARCH)
 reorder.lib : $(OBJDIR) $(REORDER_LIB)
-
-# On Solaris 7 and 8, use environment variable to force use of Motif 1.2.
-ifeq ($(LIBBLDDIR), sun/motif12)
-  SETENV=_JAVA_AWT_USE_MOTIF_1_2=1
-endif
 
 
 # This target 'test_classes' also used by hotspot reordering.

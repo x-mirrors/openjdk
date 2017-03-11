@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
 #
 
 BUILDDIR = ../..
+
+# It's currently used by jpda and hprof.  Put it in base module for now.
 LIBRARY = npt
 PRODUCT = sun
 LIBRARY_OUTPUT = npt

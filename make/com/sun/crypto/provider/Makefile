@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -113,8 +113,6 @@ ifndef OPENJDK
   endif
 endif
 
-JAVAC_MAX_WARNINGS = false
-JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -190,7 +188,7 @@ build-jar: $(UNSIGNED_DIR)/sunjce_provider.jar
 $(UNSIGNED_DIR)/sunjce_provider.jar: build $(JCE_MANIFEST_FILE)
 	$(prep-target)
 	$(BOOT_JAR_CMD) cmf $(JCE_MANIFEST_FILE) $@ $(JAR_DIRS) \
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 

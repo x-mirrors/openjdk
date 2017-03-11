@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -53,12 +53,21 @@ endif
 ifndef JDK_TOPDIR
   JDK_TOPDIR=$(TOPDIR)/jdk
 endif
+ifndef INSTALL_TOPDIR
+  INSTALL_TOPDIR=$(TOPDIR)/install
+endif
+ifndef SPONSORS_TOPDIR
+  SPONSORS_TOPDIR=$(TOPDIR)/sponsors
+endif
+ifndef DEPLOY_TOPDIR
+  DEPLOY_TOPDIR=$(TOPDIR)/deploy
+endif
 
 # Get shared platform settings
 include $(JDK_MAKE_SHARED_DIR)/Platform.gmk
 
-# Default output directory
-_OUTPUTDIR=$(TOPDIR)/build/$(PLATFORM)-$(ARCH)
+# Default directory immediately above the "build" output directory (OUTPUTDIR)
+BUILD_PARENT_DIRECTORY=$(TOPDIR)
 
 # Get platform specific settings
 include $(JDK_MAKE_SHARED_DIR)/Defs.gmk
@@ -67,20 +76,19 @@ SRC_BUNDLEDIR       = $(OUTPUTDIR)/source-bundles
 ABS_SRC_BUNDLEDIR   = $(ABS_OUTPUTDIR)/source-bundles
 BIN_BUNDLEDIR       = $(OUTPUTDIR)/bundles
 ABS_BIN_BUNDLEDIR   = $(ABS_OUTPUTDIR)/bundles
-JRL_BUNDLEDIR       = $(OUTPUTDIR)/java.net
-ABS_JRL_BUNDLEDIR   = $(ABS_OUTPUTDIR)/java.net
 
 dummy := $(shell $(MKDIR) -p $(BIN_BUNDLEDIR))
 dummy := $(shell $(MKDIR) -p $(SRC_BUNDLEDIR) )
-dummy := $(shell $(MKDIR) -p $(JRL_BUNDLEDIR) )
 
 TEMP_DIR = $(OUTPUTDIR)/tmp
 ABS_TEMP_DIR = $(ABS_OUTPUTDIR)/tmp
 
 dummy := $(shell $(MKDIR) -p $(TEMP_DIR))
 
+# The language version we want for this jdk build
+SOURCE_LANGUAGE_VERSION=7
 # The class version we want for this jdk build
-TARGET_CLASS_VERSION=5
+TARGET_CLASS_VERSION=7
 
 # The MESSAGE, WARNING and ERROR files are used to store sanity check and 
 # source check messages, warnings and errors. 

@@ -33,11 +33,6 @@
 
 <source-folder>
     <label>Demos</label>
-    <type>java</type>
     <location>${root}/src/share/demo</location>
     <includes>${demos}</includes>
-</source-folder>
-<source-folder>
-    <label>Demos</label>
-    <location>${root}/src/share/demo</location>
 </source-folder>

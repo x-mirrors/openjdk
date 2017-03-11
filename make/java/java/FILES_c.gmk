@@ -48,6 +48,7 @@ FILES_c = \
 	Proxy.c \
 	RandomAccessFile.c \
 	RandomAccessFile_md.c \
+	ResourceBundle.c \
 	Runtime.c \
 	SecurityManager.c \
 	Shutdown.c \
@@ -63,10 +64,12 @@ FILES_c = \
 	jio.c \
 	logging.c \
 	jni_util.c \
+	jni_util_md.c \
 	jdk_util.c \
 	jdk_util_md.c \
 	check_version.c \
 	java_props_md.c \
+	DriverManager.c \
 	ConstantPool.c \
 	MessageUtils.c \
 	GC.c \

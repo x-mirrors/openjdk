@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,12 +24,6 @@
 #
 
 #
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
-#
-
-#
 # Makefile for building javaw.exe (for windows)
 #
 
@@ -42,7 +36,6 @@ PRODUCT = java
 # must be set before Defs.gmk is included.
 #
 MS_RUNTIME_STATIC = true
-
 #
 # Statically link javaw to avoid the dependency on jli.dll.  This
 # must be set before Program.gmk is included.
@@ -52,7 +45,7 @@ STATIC_JLI = true
 include $(BUILDDIR)/common/Defs.gmk
 
 OTHER_CPPFLAGS += -DJAVAW
-LDLIBS_COMMON +=  user32.lib
+LDLIBS_COMMON +=  user32.lib comctl32.lib
 
 # Override the default version info with our own resource file (see 5106536)
 ifeq ($(PLATFORM), windows)

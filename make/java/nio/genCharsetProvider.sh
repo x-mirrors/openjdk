@@ -1,7 +1,7 @@
 #! /bin/sh
 
 #
-# Copyright (c) 2004, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2008, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -48,7 +48,7 @@ echo '-->' $OUT
 # Header
 #
 
-$SH addNotices.sh "$COPYRIGHT_YEARS" > $OUT
+$SH ./addNotices.sh "$COPYRIGHT_YEARS" > $OUT
 
 cat <<__END__ >>$OUT
 
@@ -84,7 +84,7 @@ $NAWK <$SPEC >>$OUT '
 
   /^[ \t]*alias / {
     acsns[m++] = tolower($2);
-    aliasMap[tolower($2)] = lcsn;
+    aliasMap[tolower($2)] = lcsn; 
     printf "        \"%s\",\n", $2;
   }
 

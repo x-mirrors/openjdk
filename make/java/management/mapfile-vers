@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,9 @@ SUNWprivate_1.1 {
 	    Java_com_sun_management_UnixOperatingSystem_getFreeSwapSpaceSize;
 	    Java_com_sun_management_UnixOperatingSystem_getMaxFileDescriptorCount;
 	    Java_com_sun_management_UnixOperatingSystem_getOpenFileDescriptorCount;
+	    Java_com_sun_management_UnixOperatingSystem_getProcessCpuLoad;
 	    Java_com_sun_management_UnixOperatingSystem_getProcessCpuTime;
+	    Java_com_sun_management_UnixOperatingSystem_getSystemCpuLoad;
 	    Java_com_sun_management_UnixOperatingSystem_getTotalPhysicalMemorySize;
 	    Java_com_sun_management_UnixOperatingSystem_getTotalSwapSpaceSize;
 	    Java_com_sun_management_UnixOperatingSystem_initialize;
@@ -47,10 +49,11 @@ SUNWprivate_1.1 {
 	    Java_sun_management_Flag_setStringValue;
 	    Java_sun_management_GarbageCollectorImpl_getCollectionCount;
 	    Java_sun_management_GarbageCollectorImpl_getCollectionTime;
+	    Java_sun_management_GarbageCollectorImpl_setNotificationEnabled;
 	    Java_sun_management_GcInfoBuilder_fillGcAttributeInfo;
 	    Java_sun_management_GcInfoBuilder_getLastGcInfo0;
 	    Java_sun_management_GcInfoBuilder_getNumGcExtAttributes;
-	    Java_sun_management_HotSpotDiagnostic_dumpHeap0;
+	    Java_sun_management_HotSpotDiagnostic_dumpHeap;
 	    Java_sun_management_HotspotThread_getInternalThreadCount;
 	    Java_sun_management_HotspotThread_getInternalThreadTimes0;
 	    Java_sun_management_MemoryImpl_getMemoryManagers0;
@@ -70,14 +73,18 @@ SUNWprivate_1.1 {
 	    Java_sun_management_ThreadImpl_dumpThreads0;
 	    Java_sun_management_ThreadImpl_findDeadlockedThreads0;
 	    Java_sun_management_ThreadImpl_findMonitorDeadlockedThreads0;
-	    Java_sun_management_ThreadImpl_getThreadInfo0;
+	    Java_sun_management_ThreadImpl_getThreadInfo1;
 	    Java_sun_management_ThreadImpl_getThreads;
 	    Java_sun_management_ThreadImpl_getThreadTotalCpuTime0;
+	    Java_sun_management_ThreadImpl_getThreadTotalCpuTime1;
 	    Java_sun_management_ThreadImpl_getThreadUserCpuTime0;
+	    Java_sun_management_ThreadImpl_getThreadUserCpuTime1;
+	    Java_sun_management_ThreadImpl_getThreadAllocatedMemory1;
 	    Java_sun_management_ThreadImpl_resetContentionTimes0;
 	    Java_sun_management_ThreadImpl_resetPeakThreadCount0;
 	    Java_sun_management_ThreadImpl_setThreadContentionMonitoringEnabled0;
 	    Java_sun_management_ThreadImpl_setThreadCpuTimeEnabled0;
+	    Java_sun_management_ThreadImpl_setThreadAllocatedMemoryEnabled0;
 	    Java_sun_management_VMManagementImpl_getAvailableProcessors;
 	    Java_sun_management_VMManagementImpl_getClassInitializationTime;
 	    Java_sun_management_VMManagementImpl_getClassLoadingTime;
@@ -106,6 +113,7 @@ SUNWprivate_1.1 {
 	    Java_sun_management_VMManagementImpl_initOptionalSupportFields;
 	    Java_sun_management_VMManagementImpl_isThreadContentionMonitoringEnabled;
 	    Java_sun_management_VMManagementImpl_isThreadCpuTimeEnabled;
+	    Java_sun_management_VMManagementImpl_isThreadAllocatedMemoryEnabled;
             JNI_OnLoad;
 	local:
 	    *;

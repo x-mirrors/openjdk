@@ -1,225 +1,113 @@
-'\" t
-.\"
-.\" Copyright 2001-2006 Sun Microsystems, Inc.  All Rights Reserved.
-.\" DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-.\"
-.\" This code is free software; you can redistribute it and/or modify it
-.\" under the terms of the GNU General Public License version 2 only, as
-.\" published by the Free Software Foundation.
-.\"
-.\" This code is distributed in the hope that it will be useful, but WITHOUT
-.\" ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-.\" FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-.\" version 2 for more details (a copy is included in the LICENSE file that
-.\" accompanied this code).
-.\"
-.\" You should have received a copy of the GNU General Public License version
-.\" 2 along with this work; if not, write to the Free Software Foundation,
-.\" Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-.\"
-.\" Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-.\" or visit www.oracle.com if you need additional information or have any
-.\" questions.
-.\" 
-.TH servertool 1 "05 Jul 2012"
-.SH "名前"
-servertool - Java(TM) IDL サーバツール
-.LP
-.B servertool
-は、アプリケーション開発者が持続サーバの登録、登録解除、起動、停止を行うためのコマンド行インタフェースを提供します。
-.SH "形式"
-.B servertool 
-\-ORBInitialPort nameserverport options [ commands ]
-.LP
-.B servertool 
-の起動時にコマンドを
-入力しなかった場合は、
-コマンド行ツールが 
-.B servertool > 
-プロンプトを表示します。
-.B servertool > 
-プロンプトで
-コマンドを入力します。
-.LP
-.B servertool 
-の起動時にコマンドを入力した場合は、
-Java IDL サーバツールが起動し、
-コマンドを実行して終了します。
-.LP
-\-ORBInitialPort nameserverport オプションは、必須です。
-nameserverport の値は、orbd を実行し、
-着信要求を待機しているポートを指定します。
-Solaris ソフトウェアを使用する場合は、
-スーパーユーザになって 1024 未満のポートでプロセスを開始する
-必要があります。このため、1024 以上のポート番号の
-使用を推奨します。
-.SH 機能説明
-.BR servertool 
-はアプリケーション
-プログラマが、持続サーバの登録、登録解除、起動、停止を
-行うためのコマンド行インタフェースです。
-サーバに関するさまざまな統計情報を取得するために
-その他のコマンドが用意されています。 
-.SH オプション
-.TP
-.BI \-ORBInitialHost " nameserverhost"
-ネームサーバを実行し、着信要求を待機している
-ホストマシンを指定します。このオプションを
-指定しない場合、nameserverhost はデフォルトの 
-localhost になります。
-.B orbd 
-と 
-.B servertool 
-が異なるマシンで実行されている場合は、orbd が
-実行されているホストの名前または IP アドレスを
-指定する必要があります。
-.TP
-.BI \-J option
-オプションを Java 仮想マシンに渡します。
-ここで option は、Java アプリケーション
-起動プログラム
-.fi
-(http://java.sun.com/javase/6/docs/technotes/tools/solaris/java.html)
-のリファレンスページで説明されている
-オプションの 1 つです。
-たとえば、\-J-Xms48m は、
-起動メモリを 48M バイトに設定します。
-\-J が基本にする仮想マシンにオプションを
-渡すことは、共通の規約です。
-.SH コマンド
-.TP
-.B register  \-server  <server class name>
-.B \-classpath <classpath to server> 
-[ 
-.B \-applicationName <application\ name>
-.B \-args <args to server>
-.B \-vmargs <flags to be passed 
-.B to Java VM>
-]
-.RS
-.LP
-新しい持続サーバを Object Request Broker Daemon (ORBD) に登録します。
-まだ登録されていない場合は、サーバが登録され、有効化されます。
-このコマンドを使用すると、
-\-server オプションによって
-識別されるサーバのメインクラスでインストールメソッドが
-呼び出されます。インストールメソッドは、
-public static void install (org.omg.CORBA.ORB) で
-なければなりません。このインストールメソッドを
-オプションで使用すると、開発者は独自の
-サーバインストール動作 (データベーススキーマの作成など) 
-を指定できます。 
-.RE
-.TP
-.B unregister \-serverid <server id >
-.B | \-applicationName <application\ name> 
-.RS
-.LP
-サーバ ID またはアプリケーション名を使用して、
-ORBD からサーバを登録解除します。
-このコマンドを使用すると、\-server オプションによって
-識別されたサーバのメインクラスでアンインストール
-メソッドが呼び出されます。アンインストールメソッドは、
-public static void uninstall(org.omg.CORBA.ORB) 
-でなければなりません。このアンインストールメソッドを
-オプションで使用すると、
-開発者は独自のサーバアンインストール動作 
-(インストールメソッドの動作の取り消しなど) 
-を指定できます。 
-.RE
-.TP
-.B getserverid \-applicationName <application name> 
-アプリケーションに対応するサーバ ID を返します。
-.TP
-.B list 
-.br
-ORBD に登録されているすべての持続サーバに関する情報を
-一覧表示します。 
-.TP
-.B listappnames
-ORBD に現在登録されているすべてのサーバのアプリケーション名を
-一覧表示します。
-.TP
-.B listactive
-ORBD によって起動され、稼動しているすべての
-持続サーバに関する情報を
-すべて一覧表示します。
-.TP 3
-locate \-serverid\ <server\ id\ >\ |
-\-applicationName\ <application\ name>
-[\-endpointType\ <endpointType>\ ] 
-.RS
-.LP
-登録されているサーバによって作成されたすべての ORB の特定のタイプ
-のエンドポイント (ポート) を特定します。サーバがまだ稼動していな
-い場合は、起動されます。エンドポイントタイプが指定されないと、サ
-ーバ内の各 ORB に関連したプレーン/非保護の 
-エンドポイントが返されます。
-.RE
-.TP 3
-locateperorb
-\-serverid\ <server\ id\ >\ |
-\-applicationName\ <application\ name>
-[\-orbid\ <ORB\ name>\ ] 
-登録されているサーバの特定の ORB によって登録されたすべてのエンド
-ポイント (ポート) を特定します。サーバがまだ動作していない場合は、
-起動されます。
-.BR orbid
-が指定されないと、デフォルト値である "" が
-.BR orbid
-に割り当てられます。空の文字列の
-.BR orbid
-を使用して ORB が作成されると、それによって登録されているす
-べてのポートが返されます。
-.RE
-.TP
-.B orblist \-serverid <server id> | 
-.B \-applicationName <application name> ]
-.RS
-.LP
-サーバで定義されている ORB の ORBId を一覧表示します。
-ORBId は、サーバによって作成された ORB の
-文字列名です。サーバがまだ稼動していない場合は、
-サーバを起動します。 
-.RE
-.TP
-.B shutdown \-serverid <server id> | 
-.B \-applicationName <application name> ]
-.RS
-.LP
-ORBD に登録されているアクティブなサーバを停止します。 
-このコマンドの
-実行中に、
-サーバプロセスを適切に停止するために、
-\-serverid または \-applicationName パラメータで
-指定されたクラスで定義されている 
-.BR shutdown() 
-メソッドも呼び出されます。 
-.RE
-.TP
-.B startup \-serverid <server id> | 
-.B \-applicationName <application name> 
-.RS
-.LP
-ORBD に登録されているサーバを起動します。 
-サーバが稼動していな
-い場合、このコマンドはサーバを起動します。サーバが既に稼動して
-いる場合は、エラーメッセージがユーザに返されます。
-.RE
-.TP
-.B help
-.br
-このサーバツールを使用してサーバに対して実行できるすべての
-コマンドを一覧表示します。
-.TP
-.B quit 
-.br
-このサーバツールを終了します。
-.RE
-.SS "関連項目"
-.LP
+." Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
+." DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+."
+." This code is free software; you can redistribute it and/or modify it
+." under the terms of the GNU General Public License version 2 only, as
+." published by the Free Software Foundation.
+."
+." This code is distributed in the hope that it will be useful, but WITHOUT
+." ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+." FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+." version 2 for more details (a copy is included in the LICENSE file that
+." accompanied this code).
+."
+." You should have received a copy of the GNU General Public License version
+." 2 along with this work; if not, write to the Free Software Foundation,
+." Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+."
+." Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+." or visit www.oracle.com if you need additional information or have any
+." questions.
+."
+.TH servertool 1 "07 May 2011"
 
 .LP
-orbd 
+.SH "名前"
+servertool \- Java(TM) IDL サーバーツール
 .LP
- 
+\f3servertool\fP はアプリケーションプログラマが、持続サーバーの登録、登録解除、起動、および停止を行うためのコマンド行インタフェースを提供します。 
+.SH "形式"
+.LP
+.nf
+\f3
+.fl
+servertool \-ORBInitialPort \fP\f4nameserverport\fP\f3 \fP\f3options\fP\f3 [ \fP\f3commands\fP\f3 ]
+.fl
+\fP
+.fi
+
+.LP
+.LP
+コマンドを入力しないで \f2servertool\fP を起動すると、コマンド行ツールとして \f2servertool >\fP プロンプトが表示されます。\f2servertool >\fP プロンプトにコマンドを入力します。
+.LP
+.LP
+コマンドを入力して \f2servertool\fP を起動すると、Java IDL サーバーツールが起動し、コマンドを実行して終了します。
+.LP
+.LP
+\f2\-ORBInitialPort\fP \f2nameserverport\fP オプションは\f3必須\fPです。 \f2nameserverport\fP の値には、\f2orbd\fP が実行され、着信要求を待機しているポートを指定する必要があります。Solaris ソフトウェアを使用する場合、1024 より小さいポート上でプロセスを開始するには、root ユーザーになる必要があります。このため、\f2nameserverport\fPとして 1024 以上のポート番号を使用することをお勧めします。
+.LP
+.SH "説明"
+.LP
+.LP
+\f2servertool\fP はアプリケーションプログラマが、持続サーバーの登録、登録解除、起動、および停止を行うためのコマンド行インタフェースを提供します。そのほかに、サーバーに関するさまざまな統計情報を取得するためのコマンドも提供します。
+.LP
+.SH "オプション"
+.LP
+.RS 3
+.TP 3
+\-ORBInitialHost nameserverhost 
+ネームサーバーが、実行され、着信要求を待機しているホストマシンを指定します。このオプションを指定しない場合、\f2nameserverhost\fP はデフォルトで \f2localhost\fP に設定されます。\f2orbd\fP と \f2servertool\fP が異なるマシン上で実行されている場合は、\f2orbd\fP が実行されているホストの名前と IP アドレスを指定する必要があります。 
+.TP 3
+\-Joption 
+Java 仮想マシンに \f2option\fP を渡します。\f2option\fP には、java(1)のリファレンスページに記載されているオプションを 1 つ指定します。たとえば、\f3\-J\-Xms48m\fP と指定すると、スタートアップメモリーは 48M バイトに設定されます。\f3\-J\fP を使って背後の実行環境にオプションを渡すことはよく行われています。 
+.RE
+
+.LP
+.SH "コマンド"
+.LP
+.RS 3
+.TP 3
+register \-server\ <server\ class\ name> \ \-classpath\ <classpath\ to\ server> [\ \-applicationName\ <application\ name> \-args\ <args\ to\ server> \-vmargs\ <flags\ to\ be\ passed\ to\ Java\ VM> \ ] 
+Object Request Broker Daemon (ORBD) に新規持続サーバーを登録します。サーバーが未登録の場合、登録して起動します。このコマンドによって、\f2\-server\fP オプションで識別されるサーバーのメインクラス内でインストールメソッドが呼び出されます。このインストールメソッドは、\f2public static void install(org.omg.CORBA.ORB)\fP になっている必要があります。インストールメソッドは、オプションであり、データベーススキーマの作成などの独自のサーバーインストール動作を開発者が指定できます。 
+.TP 3
+unregister \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> 
+サーバー ID またはアプリケーション名を使用して、ORBD のサーバーの登録を解除します。このコマンドによって、\f2\-server\fP オプションで識別されるサーバーのメインクラス内でアンインストールメソッドが呼び出されます。このアンインストールメソッドは、\f2public static void uninstall(org.omg.CORBA.ORB)\fP になっている必要があります。アンインストールメソッドは、オプションであり、インストールメソッドの動作の取り消しなどの独自のサーバーアンインストール動作を開発者が指定できます。 
+.TP 3
+getserverid \-applicationName\ <application\ name> 
+アプリケーションに関連付けられているサーバー ID を返します。 
+.TP 3
+list 
+ORBD に登録されているすべての持続サーバーに関する情報を一覧表示します。 
+.TP 3
+listappnames 
+現在 ORBD に登録されているすべてのサーバーのアプリケーション名を一覧表示します。 
+.TP 3
+listactive 
+ORDB によって起動され、現在実行されているすべての持続サーバーに関する情報を一覧表示します。 
+.TP 3
+locate \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> [\-endpointType\ <endpointType>\ ] 
+登録されたサーバーで作成したすべての ORB の特定の型について端点 (ポート) を検出します。サーバーが実行されていない場合、起動されます。端点の型が指定されていない場合、サーバーの ORB ごとに関連付けられている plain 型 または non\-protected 型の端点が返されます。 
+.TP 3
+locateperorb \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> [\-orbid\ <ORB\ name>\ ] 
+登録されたサーバーの特定の ORB で登録された端点 (ポート) を検出します。サーバーが実行されていない場合、起動されます。\f2orbid\fP が指定されていない場合は、デフォルト値の「""」が\f2orbid\fPに割り当てられます。ORB が空文字列の \f2orbid\fP で作成されている場合、登録したポートがすべて返されます。 
+.TP 3
+orblist \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> 
+サーバー上に定義された ORB の ORBId を一覧表示します。ORBId はサーバーで作成された ORB の文字列名です。サーバーが実行されていない場合、起動されます。 
+.TP 3
+shutdown \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> 
+ORBD に登録されたアクティブなサーバーを停止します。このコマンドの実行中に、\f2\-serverid\fP パラメータまたは \f2\-applicationName\fP パラメータで指定されたクラス内に定義された \f2shutdown()\fP メソッドも呼び出されてサーバープロセスを正しく停止します。 
+.TP 3
+startup \-serverid\ <server\ id\ >\ | \-applicationName\ <application\ name> 
+ORBD に登録されたサーバーを起動します。サーバーが実行されていない場合は、このコマンドでサーバーを起動します。サーバーがすでに実行されている場合は、ユーザーにエラーメッセージが返されます。 
+.TP 3
+help 
+サーバーがサーバーツールで使用できるすべてのコマンドを表示します。 
+.TP 3
+quit 
+サーバーツールを終了します。 
+.RE
+
+.LP
+.SH "関連項目"
+.LP
+orbd(1)  

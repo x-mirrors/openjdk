@@ -1,3 +1,1 @@
-project=jdk6
-whitespace=lax
-bugids=ignore
+project=jdk7

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2009, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -56,7 +56,6 @@ SUNWprivate_1.1 {
 		JNU_ThrowArrayIndexOutOfBoundsException;
 		JNU_ThrowByName;
 		JNU_ThrowByNameWithLastError;
-                JNU_ThrowByNameWithMessageAndLastError;
 		JNU_ThrowClassNotFoundException;
 		JNU_ThrowIllegalAccessError;
 		JNU_ThrowIllegalAccessException;
@@ -86,7 +85,6 @@ SUNWprivate_1.1 {
 		Java_java_io_FileOutputStream_close0;
 		Java_java_io_FileOutputStream_initIDs;
 		Java_java_io_FileOutputStream_open;
-		Java_java_io_FileOutputStream_openAppend;
 		Java_java_io_FileOutputStream_write;
 		Java_java_io_FileOutputStream_writeBytes;
 		Java_java_io_FileSystem_getFileSystem;
@@ -137,7 +135,8 @@ SUNWprivate_1.1 {
 		Java_java_lang_ClassLoader_00024NativeLibrary_find;
 		Java_java_lang_ClassLoader_00024NativeLibrary_load;
 		Java_java_lang_ClassLoader_00024NativeLibrary_unload;
-                Java_java_lang_ClassLoader_registerNatives;
+		Java_java_lang_ClassLoader_getCaller; 
+		Java_java_lang_ClassLoader_registerNatives;
 		Java_java_lang_Compiler_registerNatives;
 		Java_java_lang_Double_longBitsToDouble;
 		Java_java_lang_Double_doubleToRawLongBits;
@@ -151,10 +150,8 @@ SUNWprivate_1.1 {
 		Java_java_lang_StrictMath_asin;
 		Java_java_lang_StrictMath_atan;
 		Java_java_lang_StrictMath_atan2;
-		Java_java_lang_StrictMath_ceil;
 		Java_java_lang_StrictMath_cos;
 		Java_java_lang_StrictMath_exp;
-		Java_java_lang_StrictMath_floor;
 		Java_java_lang_StrictMath_log;
 		Java_java_lang_StrictMath_log10;
 		Java_java_lang_StrictMath_pow;
@@ -236,6 +233,8 @@ SUNWprivate_1.1 {
 		Java_java_security_AccessController_doPrivileged__Ljava_security_PrivilegedExceptionAction_2Ljava_security_AccessControlContext_2;
 		Java_java_security_AccessController_getStackAccessControlContext;
 		Java_java_security_AccessController_getInheritedAccessControlContext;
+		Java_java_sql_DriverManager_getCallerClassLoader;
+		Java_java_util_ResourceBundle_getClassContext;
 		Java_java_util_TimeZone_getSystemTimeZoneID;
 		Java_java_util_TimeZone_getSystemGMTOffsetID;
 		Java_java_util_concurrent_atomic_AtomicLong_VMSupportsCS8;
@@ -270,7 +269,6 @@ SUNWprivate_1.1 {
 		Java_sun_reflect_NativeConstructorAccessorImpl_newInstance0;
 		Java_sun_reflect_NativeMethodAccessorImpl_invoke0;
 		Java_sun_reflect_Reflection_getCallerClass;
-		Java_sun_reflect_Reflection_getCallerClass0;
 		Java_sun_reflect_Reflection_getClassAccessFlags;
                 Java_sun_misc_Version_getJdkVersionInfo;
                 Java_sun_misc_Version_getJdkSpecialVersion;
@@ -279,6 +277,9 @@ SUNWprivate_1.1 {
                 Java_sun_misc_VM_getThreadStateValues;
                 Java_sun_misc_VM_initialize;
 		Java_sun_misc_VMSupport_initAgentProperties;
+
+                # ZipFile.c needs this one
+		throwFileNotFoundException;
 
 #		Java_sun_misc_VM_getState;			threads.c
 #		Java_sun_misc_VM_threadsSuspended;		threads.c

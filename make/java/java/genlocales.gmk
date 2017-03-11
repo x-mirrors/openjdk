@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -49,7 +49,7 @@ Euro_Resources_properties := $(FILES_compiled_properties)
 # $(BUILDDIR)/java/text/FILES_java.gmk contains the "sun.text.resources" for 
 # European language support
 
-include $(BUILDDIR)/java/text/FILES_java.gmk
+include $(BUILDDIR)/java/text/base/FILES_java.gmk
 
 Euro_Resources_java += $(FILES_java)
 
@@ -68,7 +68,7 @@ NonEuro_Resources_properties := $(FILES_compiled_properties)
 FILES_java := $(FILES_java_orig)
 FILES_compiled_properties := $(FILES_compiled_properties_orig)
 
-LocaleDataMetaInfo_Src=$(SHARE_SRC)/classes/sun/util/LocaleDataMetaInfo-XLocales.java
+LocaleDataMetaInfo_Src=$(SHARE_SRC)/classes/sun/util/LocaleDataMetaInfo-XLocales.java.template
 LocaleDataMetaInfo_Dest=$(GENSRCDIR)/sun/util/LocaleDataMetaInfo.java
 LOCALEGEN_SH=localegen.sh
 RESOURCE_NAMES="FormatData CollationData TimeZoneNames LocaleNames CurrencyNames CalendarData"
@@ -80,7 +80,8 @@ $(LocaleDataMetaInfo_Dest):$(LocaleDataMetaInfo_Src) $(LOCALEGEN_SH)
 	@$(ECHO) $(subst .java,'\n',$(Euro_Resources_java)) >> $@.tmp.euro;	
 	@$(ECHO) $(subst .properties,'\n',$(NonEuro_Resources_properties)) > $@.tmp.noneuro;
 	@$(ECHO) $(subst .java,'\n',$(NonEuro_Resources_java)) >> $@.tmp.noneuro;
-	NAWK="$(NAWK)" SED="$(SED)" $(SH) $(LOCALEGEN_SH) $(RESOURCE_NAMES) $@.tmp.euro \
+	NAWK="$(NAWK)" SED="$(SED)" SORT="$(SORT)" \
+	     $(SH) $(LOCALEGEN_SH) $(RESOURCE_NAMES) $@.tmp.euro \
 		$@.tmp.noneuro $< $@
 	@$(RM) $@.tmp.euro $@.tmp.noneuro;
 	

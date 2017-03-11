@@ -1,88 +1,126 @@
-'\" t
-.\"
-.\" Copyright 2004-2006 Sun Microsystems, Inc.  All Rights Reserved.
-.\" DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-.\"
-.\" This code is free software; you can redistribute it and/or modify it
-.\" under the terms of the GNU General Public License version 2 only, as
-.\" published by the Free Software Foundation.
-.\"
-.\" This code is distributed in the hope that it will be useful, but WITHOUT
-.\" ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-.\" FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-.\" version 2 for more details (a copy is included in the LICENSE file that
-.\" accompanied this code).
-.\"
-.\" You should have received a copy of the GNU General Public License version
-.\" 2 along with this work; if not, write to the Free Software Foundation,
-.\" Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-.\"
-.\" Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-.\" or visit www.oracle.com if you need additional information or have any
-.\" questions.
-.\" ` 
-.TH jinfo 1 "05 Jul 2012"
-.SH Ì¾Á°
-jinfo \- ¹½À®¾ðÊó 
-.\"
-.SH ·Á¼°
-.B jinfo 
-.BI [ option ] " pid" 
-.br
-.B jinfo
-.BI [ option ] " executable core" 
-.br
-.B jinfo
-.BI [ option ] " [server-id@]remote-hostname-or-IP"
-.LP
-.SH ¥Ñ¥é¥á¡¼¥¿
-.LP
+." Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
+." DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+."
+." This code is free software; you can redistribute it and/or modify it
+." under the terms of the GNU General Public License version 2 only, as
+." published by the Free Software Foundation.
+."
+." This code is distributed in the hope that it will be useful, but WITHOUT
+." ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+." FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+." version 2 for more details (a copy is included in the LICENSE file that
+." accompanied this code).
+."
+." You should have received a copy of the GNU General Public License version
+." 2 along with this work; if not, write to the Free Software Foundation,
+." Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+."
+." Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+." or visit www.oracle.com if you need additional information or have any
+." questions.
+."
+.TH jinfo 1 "07 May 2011"
 
 .LP
-.TP 3
-option
-¥ª¥×¥·¥ç¥ó¤ÏÁê¸ß¤ËÇÓÂ¾Åª¤Ç¤¹¡£¥ª¥×¥·¥ç¥ó¤ò»ÈÍÑ¤¹¤ë¾ì¹ç¤Ï¡¢¥³¥Þ¥ó¥ÉÌ¾¤ÎÄ¾¸å¤Ë»ØÄê¤¹¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£
-.TP 3
-pid
-¹½À®¾ðÊó¤ò½ÐÎÏ¤¹¤ë¥×¥í¥»¥¹ ID¡£¥×¥í¥»¥¹¤Ï Java ¥×¥í¥»¥¹¤Ç¤Ê¤±¤ì¤Ð¤Ê¤ê¤Þ¤»¤ó¡£¥Þ¥·¥ó¾å¤Ç¼Â¹Ô¤·¤Æ¤¤¤ë Java ¥×¥í¥»¥¹¤Î¥ê¥¹¥È¤ò¼èÆÀ¤¹¤ë¤Ë¤Ï¡¢
-.B jps
-¤ò»ÈÍÑ¤·¤Þ¤¹¡£
-.TP 3
-executable 
-¥³¥¢¥À¥ó¥×¤¬À¸À®¤µ¤ì¤¿ Java ¼Â¹Ô²ÄÇ½¥Õ¥¡¥¤¥ë¡£
-.TP 3
-core 
-¹½À®¾ðÊó¤ò½ÐÎÏ¤¹¤ë¥³¥¢¥Õ¥¡¥¤¥ë¡£
-.TP 3
-remote\-hostname\-or\-IP 
-¥ê¥â¡¼¥È¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð (
-.B jsadebugd 
-¤ò»²¾È) ¤Î¥Û¥¹¥ÈÌ¾¤Þ¤¿¤Ï IP ¥¢¥É¥ì¥¹¡£
-.TP 3
-server\-id 
-Æ±¤¸¥ê¥â¡¼¥È¥Û¥¹¥È¾å¤ÇÊ£¿ô¤Î¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð¤¬¼Â¹Ô¤·¤Æ¤¤¤ë¾ì¹ç¤Î¡¢¥ª¥×¥·¥ç¥ó¤Î°ì°Õ ID¡£
+.SH "Ì¾Á°"
+jinfo \- ¹½À®¾ðÊó
 .LP
-.SH µ¡Ç½ÀâÌÀ
-.B jinfo
-¤Ï¡¢»ØÄê¤µ¤ì¤¿ Java ¥×¥í¥»¥¹¤Þ¤¿¤Ï¥³¥¢¥Õ¥¡¥¤¥ë¤Þ¤¿¤Ï¥ê¥â¡¼¥È¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð¤Î Java ¹½À®¾ðÊó¤ò½ÐÎÏ¤·¤Þ¤¹¡£¹½À®¾ðÊó¤Ë¤Ï¡¢Java ¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¤È Java ²¾ÁÛ¥Þ¥·¥ó¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤¬´Þ¤Þ¤ì¤Þ¤¹¡£
-»ØÄê¤µ¤ì¤¿¥×¥í¥»¥¹¤¬ 64 ¥Ó¥Ã¥È VM ¾å¤Ç¼Â¹Ô¤µ¤ì¤Æ¤¤¤ë¾ì¹ç¡¢\f2\-J\-d64\fP ¥ª¥×¥·¥ç¥ó¤ò»ØÄê¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¾ì¹ç¤¬¤¢¤ê¤Þ¤¹¡£¼¡¤ËÎã¤ò¼¨¤·¤Þ¤¹¡£
-.br
+.RS 3
+.TP 2
+o
+·Á¼° 
+.TP 2
+o
+¥Ñ¥é¥á¡¼¥¿ 
+.TP 2
+o
+ÀâÌÀ 
+.TP 2
+o
+¥ª¥×¥·¥ç¥ó 
+.TP 2
+o
+´ØÏ¢¹àÌÜ 
+.RE
+
+.LP
+.SH "·Á¼°"
+.LP
+.nf
+\f3
+.fl
+\fP\f3jinfo\fP [ option ] pid
+.fl
+\f3jinfo\fP [ option ] executable core
+.fl
+\f3jinfo\fP [ option ] [server\-id@]remote\-hostname\-or\-IP 
+.fl
+.fi
+
+.LP
+.SH "¥Ñ¥é¥á¡¼¥¿"
+.LP
+.RS 3
+.TP 3
+option 
+³Æ¥ª¥×¥·¥ç¥ó¤Ï¸ß¤¤¤ËÇÓÂ¾Åª¤Ç¤¹¡£¥ª¥×¥·¥ç¥ó¤ò»ÈÍÑ¤¹¤ë¾ì¹ç¡¢¥³¥Þ¥ó¥ÉÌ¾¤ÎÄ¾¸å¤Ëµ­½Ò¤·¤Þ¤¹¡£ 
+.RE
 
 .LP
 .RS 3
+.TP 3
+pid 
+½ÐÎÏ¤¹¤ë¹½À®¾ðÊó¤Î¥×¥í¥»¥¹ ID¡£¥×¥í¥»¥¹¤Ï Java ¥×¥í¥»¥¹¤Ç¤¢¤ëÉ¬Í×¤¬¤¢¤ê¤Þ¤¹¡£¥Þ¥·¥ó¾å¤Ç¼Â¹Ô¤·¤Æ¤¤¤ë Java ¥×¥í¥»¥¹¤Î°ìÍ÷¤ò¼èÆÀ¤¹¤ë¤Ë¤Ï¡¢jps(1) ¤ò»ÈÍÑ¤·¤Þ¤¹¡£ 
+.RE
 
 .LP
-jinfo \-J\-d64 \-sysprops pid
+.RS 3
+.TP 3
+executable 
+¥³¥¢¥À¥ó¥×¤ÎºîÀ®¸µ¤Î Java ¼Â¹Ô²ÄÇ½¥Õ¥¡¥¤¥ë¤Ç¤¹¡£ 
 .RE
+
 .LP
-Ãí - ¤³¤Î¥æ¡¼¥Æ¥£¥ê¥Æ¥£¤Ï¥µ¥Ý¡¼¥È¤µ¤ì¤Æ¤¤¤Ê¤¤¤¿¤á¡¢JDK ¤Î¾­Íè¤Î¥Ð¡¼¥¸¥ç¥ó¤Ç¤Ï»ÈÍÑ¤Ç¤­¤Ê¤¤²ÄÇ½À­¤¬¤¢¤ê¤Þ¤¹¡£
-Windows ¾å¤Î jinfo ¤Ç¥µ¥Ý¡¼¥È¤µ¤ì¤Æ¤¤¤ë¤Î¤Ï¡¢¼Â¹ÔÃæ¤Î¥×¥í¥»¥¹¤Î \-flag ¥ª¥×¥·¥ç¥ó¤À¤±¤Ç¤¹¡£
+.RS 3
+.TP 3
+core 
+½ÐÎÏ¤¹¤ë¹½À®¾ðÊó¤Î¥³¥¢¥Õ¥¡¥¤¥ë¡£ 
+.RE
+
 .LP
-.SH ¥ª¥×¥·¥ç¥ó
-.if t .TP 20
-.if n .TP 15
-.B " <no option>"
-¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤È¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¤ÈÃÍ¤Î¥Ú¥¢¤ÎÎ¾Êý¤ò½ÐÎÏ¤·¤Þ¤¹¡£
+.RS 3
+.TP 3
+remote\-hostname\-or\-IP 
+¥ê¥â¡¼¥È¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð¡¼ (jsadebugd(1) ¤ò»²¾È) ¤Î¥Û¥¹¥ÈÌ¾¤Þ¤¿¤Ï IP ¥¢¥É¥ì¥¹¤Ç¤¹¡£ 
+.RE
+
+.LP
+.RS 3
+.TP 3
+server\-id 
+Ê£¿ô¤Î¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð¡¼¤¬Æ±°ì¤Î¥ê¥â¡¼¥È¥Û¥¹¥È¤Ç¼Â¹Ô¤·¤Æ¤¤¤ë¾ì¹ç¤Î¡¢¥ª¥×¥·¥ç¥ó¸ÇÍ­¤Î ID ¤Ç¤¹¡£ 
+.RE
+
+.LP
+.SH "ÀâÌÀ"
+.LP
+.LP
+\f3jinfo\fP ¤Ï¡¢»ØÄê¤µ¤ì¤¿ Java ¥×¥í¥»¥¹¤ä¥³¥¢¥Õ¥¡¥¤¥ë¤Þ¤¿¤Ï¥ê¥â¡¼¥È¥Ç¥Ð¥Ã¥°¥µ¡¼¥Ð¡¼¤Î Java ¹½À®¾ðÊó¤ò½ÐÎÏ¤·¤Þ¤¹¡£¹½À®¾ðÊó¤Ï¡¢Java ¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¡¼¤È Java ²¾ÁÛ¥Þ¥·¥ó¤Î¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤«¤é¹½À®¤µ¤ì¤Þ¤¹¡£»ØÄê¤µ¤ì¤¿¥×¥í¥»¥¹¤¬ 64 ¥Ó¥Ã¥È VM ¾å¤Ç¼Â¹Ô¤µ¤ì¤Æ¤¤¤ë¾ì¹ç¡¢\f2\-J\-d64\fP ¥ª¥×¥·¥ç¥ó¤ò»ØÄê¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¾ì¹ç¤¬¤¢¤ê¤Þ¤¹¡£¼¡¤ËÎã¤ò¼¨¤·¤Þ¤¹¡£
+.br
+jinfo \-J\-d64 \-sysprops pid
+.LP
+.LP
+\f3Ãí \- ¤³¤Î¥æ¡¼¥Æ¥£¥ê¥Æ¥£¡¼¤Ï¥µ¥Ý¡¼¥ÈÂÐ¾Ý³°¤Ç¤¢¤ê¡¢¾­Íè¤Î JDK ¤Î¥Ð¡¼¥¸¥ç¥ó¤Ç¤ÏÍøÍÑ¤Ç¤­¤Ê¤¯¤Ê¤ë²ÄÇ½À­¤¬¤¢¤ê¤Þ¤¹¡£dbgeng.dll ¤¬Â¸ºß¤·¤Æ¤¤¤Ê¤¤ Windows ¥·¥¹¥Æ¥à¤Ç¤Ï¡¢¡ÖDebugging Tools For Windows¡×¤ò¥¤¥ó¥¹¥È¡¼¥ë¤·¤Ê¤¤¤È¤³¤ì¤é¤Î¥Ä¡¼¥ë¤¬Àµ¾ï¤ËÆ°ºî¤·¤Þ¤»¤ó¡£¤Þ¤¿¡¢ \fP\f4PATH\fP\f3 ´Ä¶­ÊÑ¿ô¤Ë¤Ï¡¢¥¿¡¼¥²¥Ã¥È¥×¥í¥»¥¹¤Ë¤è¤Ã¤Æ»ÈÍÑ¤µ¤ì¤ë \fP\f4jvm.dll\fP\f3 ¤Î¾ì½ê¡¢¤Þ¤¿¤Ï¥¯¥é¥Ã¥·¥å¥À¥ó¥×¥Õ¥¡¥¤¥ë¤¬À¸À®¤µ¤ì¤¿¾ì½ê¤¬´Þ¤Þ¤ì¤ë¤è¤¦¤Ë¤·¤Æ¤¯¤À¤µ¤¤¡£\fP
+.LP
+.LP
+\f3¼¡¤ËÎã¤ò¼¨¤·¤Þ¤¹¡£ \fP\f4set PATH=<jdk>\\jre\\bin\\client;%PATH%\fP
+.LP
+.SH "¥ª¥×¥·¥ç¥ó"
+.LP
+.RS 3
+.TP 3
+<¥ª¥×¥·¥ç¥ó¤Ê¤·> 
+¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤ò¡¢¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¡¼Ì¾¤ÈÃÍ¤Î¥Ú¥¢¤È¤È¤â¤Ë½ÐÎÏ¤·¤Þ¤¹¡£
 .br
 .TP 3
 \-flag name 
@@ -95,34 +133,34 @@ Windows ¾å¤Î jinfo ¤Ç¥µ¥Ý¡¼¥È¤µ¤ì¤Æ¤¤¤ë¤Î¤Ï¡¢¼Â¹ÔÃæ¤Î¥×¥í¥»¥¹¤Î \-flag ¥ª¥×¥·¥ç¥
 .TP 3
 \-flag name=value 
 »ØÄê¤µ¤ì¤¿¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤ò»ØÄê¤µ¤ì¤¿ÃÍ¤ËÀßÄê¤·¤Þ¤¹¡£
-.if t .TP 20
-.if n .TP 15
-.B \-flags
+.br
+.TP 3
+\-flags 
 JVM ¤ËÅÏ¤µ¤ì¤ë¥³¥Þ¥ó¥É¹Ô¥Õ¥é¥°¤ò¥Ú¥¢¤Ç½ÐÎÏ¤·¤Þ¤¹¡£
-.if t .TP 20
-.if n .TP 15
-.B \-sysprops
-Java ¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¤òÌ¾Á°¤ÈÃÍ¤Î¥Ú¥¢¤È¤·¤Æ½ÐÎÏ¤·¤Þ¤¹¡£
-.if t .TP 20
-.if n .TP 15
-.B \-h
-¥Ø¥ë¥×¥á¥Ã¥»¡¼¥¸¤ò½ÐÎÏ¤·¤Þ¤¹¡£
-.if t .TP 20
-.if n .TP 15
-.B \-help
-¥Ø¥ë¥×¥á¥Ã¥»¡¼¥¸¤ò½ÐÎÏ¤·¤Þ¤¹¡£
-.SH ´ØÏ¢¹àÌÜ
-.LP
-.RS 3
-.TP 2
-*
-jps 
-.TP 2
-*
-jsadebugd 
+.br
+.TP 3
+\-sysprops 
+Java ¥·¥¹¥Æ¥à¥×¥í¥Ñ¥Æ¥£¡¼¤òÌ¾Á°¤ÈÃÍ¤Î¥Ú¥¢¤È¤·¤Æ½ÐÎÏ¤·¤Þ¤¹¡£
+.br
+.TP 3
+\-h 
+¥Ø¥ë¥×¥á¥Ã¥»¡¼¥¸¤ò½ÐÎÏ¤·¤Þ¤¹¡£ 
+.TP 3
+\-help 
+¥Ø¥ë¥×¥á¥Ã¥»¡¼¥¸¤ò½ÐÎÏ¤·¤Þ¤¹¡£ 
 .RE
 
 .LP
+.SH "´ØÏ¢¹àÌÜ"
+.LP
+.RS 3
+.TP 2
+o
+jps(1) 
+.TP 2
+o
+jsadebugd(1) 
+.RE
 
 .LP
  

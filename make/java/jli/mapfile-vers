@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2008, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -27,21 +27,13 @@
 
 SUNWprivate_1.1 {
 	global:
-		JLI_ParseManifest;
-		JLI_JarUnpackFile;
-		JLI_FreeManifest;
+		JLI_Launch;
 		JLI_ManifestIterate;
-		JLI_ExactVersionId;
-		JLI_PrefixVersionId;
-		JLI_AcceptableRelease;
-		JLI_ValidVersionString;
-		JLI_WildcardExpandClasspath;
-		JLI_MemAlloc;
-		JLI_MemRealloc;
-		JLI_StringDup;
-		JLI_MemFree;
-		JLI_StrCCmp;
-		
+		JLI_SetTraceLauncher;
+		JLI_ReportErrorMessage;
+		JLI_ReportErrorMessageSys;
+		JLI_ReportMessage;
+		JLI_ReportExceptionDescription;
 	local:
 		*;
 };

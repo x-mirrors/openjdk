@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2009, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ FILES_c = \
 	ScaledBlit.c \
 	FillRect.c \
 	FillSpans.c \
+	FillParallelogram.c \
+	DrawParallelogram.c \
 	DrawLine.c \
 	DrawRect.c \
 	DrawPolygons.c \
@@ -70,7 +72,6 @@ FILES_c = \
         FourByteAbgrPre.c \
 	BufferedMaskBlit.c \
 	BufferedRenderPipe.c \
-	RenderBuffer.c \
 	ShapeSpanIterator.c \
 	SpanClipRenderer.c \
 	SurfaceData.c \
@@ -154,7 +155,6 @@ FILES_cpp = \
 	awt_Menu.cpp \
 	awt_MenuBar.cpp \
 	awt_MenuItem.cpp \
-	awt_MMStub.cpp \
 	awt_MouseEvent.cpp \
 	awt_Object.cpp \
 	awt_Palette.cpp \
@@ -172,7 +172,6 @@ FILES_cpp = \
 	awt_TextComponent.cpp \
 	awt_TextField.cpp \
 	awt_Toolkit.cpp \
-	awt_Unicode.cpp \
 	awt_Window.cpp \
 	awt_Win32GraphicsEnv.cpp \
 	awt_Win32GraphicsDevice.cpp \
@@ -182,6 +181,8 @@ FILES_cpp = \
 	awt_Mlib.cpp \
 	awt_new.cpp \
 	awt_TrayIcon.cpp \
+	awt_DCHolder.cpp \
+	awt_ole.cpp \
 	ShaderList.cpp \
 	D3DBlitLoops.cpp \
 	D3DBufImgOps.cpp \
@@ -204,6 +205,4 @@ FILES_cpp = \
 	ComCtl32Util.cpp \
 	DllUtil.cpp \
 	initIDs.cpp \
-	awt_dlls.cpp \
-	UnicowsLoader.cpp \
 	MouseInfo.cpp

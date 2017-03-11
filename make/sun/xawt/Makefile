@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -48,6 +48,11 @@ AUTO_JAVA_PRUNE = WrapperGenerator.java
 
 LDFLAGS += -L$(OPENWIN_LIB)
 
+# For Xrender extension.
+ifeq ($(PLATFORM), solaris)
+LDFLAGS += -L/usr/openwin/sfw/lib$(ISA_DIR) -R/usr/openwin/sfw/lib$(ISA_DIR)
+endif
+
 ifeq ($(PLATFORM), linux)
 LDFLAGS += -lpthread
 dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
@@ -87,7 +92,7 @@ vpath %.c   $(SHARE_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
-OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -ldl \
+OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender -ldl \
                    $(LDFLAGS_COMMON) $(AWT_RUNPATH) $(OTHER_LDFLAGS) -lXtst -lXi
 
 ifeq  ($(PLATFORM), solaris)
@@ -121,25 +126,46 @@ CPPFLAGS += -DXAWT -DXAWT_HACK \
 	-I$(PLATFORM_SRC)/native/sun/awt/medialib \
         -I$(PLATFORM_SRC)/native/sun/font \
         -I$(SHARE_SRC)/native/sun/awt \
-        -I$(PLATFORM_SRC)/native/sun/awt 
+        -I$(PLATFORM_SRC)/native/sun/awt
 
 ifeq ($(PLATFORM), linux)
-# Allows for builds on Debian GNU Linux, X11 is in a different place 
-  CPPFLAGS += -I/usr/X11R6/include/X11/extensions \
-              -I/usr/include/X11/extensions \
-              -I$(MOTIF_DIR)/include \
-              -I$(OPENWIN_HOME)/include 
+  ifndef CROSS_COMPILE_ARCH
+    # Allows for builds on Debian GNU Linux, X11 is in a different place 
+    # This should really be handled at a higher-level so we don't have to
+    # work-around this when cross-compiling
+    CPPFLAGS += -I/usr/X11R6/include/X11/extensions \
+                -I/usr/include/X11/extensions \
+                -I$(OPENWIN_HOME)/include 
+  else
+    CPPFLAGS += -I$(OPENWIN_HOME)/include/X11/extensions \
+                -I$(OPENWIN_HOME)/include 
+  endif
 endif
 
+# We have some odd logic here because some Solaris 10 updates
+# have a render.h file that suggests gradients are supported, but
+# the Xrender.h doesn't have the corresponding type definitions.
+# Earlier updates have neither. We'd like to know if there's a mismatch.
+# Whilst in the C preprocessor we can tell if the render.h define's are set
+# we can't tell anything about C declarations.
+# A grep of Xrender.h is the only way to know this. If they are absent
+# we will set a flag indicating this mismatch and the JDK source file
+# will interpret it to resolve the problem.
 ifeq ($(PLATFORM), solaris)
-  CPPFLAGS += -I$(OPENWIN_HOME)/include/X11/extensions -I$(MOTIF_DIR)/include 
+  CPPFLAGS += -I$(OPENWIN_HOME)/include/X11/extensions
+  OS_VERSION := $(shell uname -r)
+  XRENDER_H := $(OPENWIN_HOME)/share/include/X11/extensions/Xrender.h
+  ifeq ($(OS_VERSION),5.10) 
+     LINEARGRADIENT_CNT := $(shell $(EGREP) -c XLinearGradient $(XRENDER_H))
+     ifeq ($(LINEARGRADIENT_CNT),0) 
+       CFLAGS+= -DSOLARIS10_NO_XRENDER_STRUCTS
+     endif
+ endif
 endif
 
 ifeq ($(MILESTONE), internal)
   CPPFLAGS += -DINTERNAL_BUILD
 endif
-
-#LDFLAGS_OPT += -L../../../build/solaris-sparc/lib/sparc/motif21 -lmawt_g -lXext -lXm -lXt -ldl
 
 #
 # Generation of wrappers
@@ -226,7 +252,11 @@ XLIBTYPES=$(PLATFORM_SRC)/classes/sun/awt/X11/generator/xlibtypes.txt
 
 $(SIZERS): $(SIZERS_C) 
 	$(prep-target)
+ifndef CROSS_COMPILE_ARCH
 	$(CC) $(CFLAGS_$(subst .,,$(suffix $@))) $(CPPFLAGS) -o $@ $(SIZER)$(suffix $@).c
+else
+	$(HOST_CC) $(CPPFLAGS) -o $@ $(SIZER)$(suffix $@).c
+endif
 
 $(WRAPPER_GENERATOR_CLASS): $(WRAPPER_GENERATOR_JAVA)
 	$(prep-target)
@@ -250,7 +280,7 @@ $(SIZES): $(SIZERS)
 	@if [ "$(DOCOMPARE)$(suffix $@)" = "true.64" ]; then \
 	    $(ECHO) COMPARING $@ and $(STORED_SIZES_TMPL_$(PLATFORM)_$(LIBARCH)); \
 	    $(DIFF) $@ $(STORED_SIZES_TMPL_$(PLATFORM)_$(LIBARCH)); \
-	fi	
+	fi
 
 $(TEMPDIR)/.gen.wrappers: $(SIZES) $(WRAPPER_GENERATOR_CLASS) $(XLIBTYPES)
 	$(BOOT_JAVA_CMD) -cp $(WRAPPER_GENERATOR_TEMPDIR) WrapperGenerator \
@@ -260,10 +290,11 @@ touch.wrappers: $(TEMPDIR)/.gen.wrappers
 	$(MKDIR) -p $(TEMPDIR)
 	$(TOUCH) $(TEMPDIR)/.gen.wrappers
 
-generated.clean:	
+generated.clean:
 	$(RM) -r $(WRAPPER_GENERATOR_TEMPDIR)
 	$(RM) -r $(WRAPPER_GENERATOR_DIR)
 	$(RM) -r $(GEN_DIR)/*.java
+	$(RM) -r $(TEMPDIR)/.gen_icons
 
 ifdef OPENJDK
     ICONS_PATH_PREFIX=$(PLATFORM_SRC)
@@ -312,7 +343,6 @@ $(TEMPDIR)/.gen_icons: $(TEMPDIR_CLASSES)/sun/awt/X11/ToBin.class $(ICONS)
 	    $(ECHO) "public static int[] $$name = { " >> $$classname;  \
 	    $(CAT) $$i | \
 	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
-		-Dawt.toolkit=sun.awt.motif.MToolkit \
 		-Djava.awt.headless=true \
 		sun.awt.X11.ToBin >> $$classname; \
 	    $(ECHO) "}; }" >> $$classname;  \
@@ -323,7 +353,6 @@ $(TEMPDIR)/.gen_icons: $(TEMPDIR_CLASSES)/sun/awt/X11/ToBin.class $(ICONS)
 	    $(ECHO) "public static long[] $$name = { " >> $$classname;  \
 	    $(CAT) $$i | \
 	      $(BOOT_JAVA_CMD) -cp $(TEMPDIR_CLASSES)  \
-		-Dawt.toolkit=sun.awt.motif.MToolkit \
 		-Djava.awt.headless=true \
 		sun.awt.X11.ToBin >> $$classname; \
 	    $(ECHO) "}; }" >> $$classname;  \

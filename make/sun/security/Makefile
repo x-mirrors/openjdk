@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@
 #
 
 BUILDDIR = ../..
-SUBDIRS_MAKEFLAGS += JAVAC_MAX_WARNINGS=true
 include $(BUILDDIR)/common/Defs.gmk
 
 # build sun/security/jgss/wrapper on non-windows platform
@@ -53,16 +52,23 @@ ifeq ($(ARCH_DATA_MODEL), 64)
   endif
 endif
 
-# Build Microsoft CryptoAPI provider only on (non-64-bit) Windows platform.
+# Build Microsoft CryptoAPI provider only on Windows platform.
 MSCAPI =
 ifeq ($(PLATFORM), windows)
-  ifneq ($(ARCH_DATA_MODEL), 64)
-    MSCAPI = mscapi
-  endif
+  MSCAPI = mscapi
 endif
 
-SUBDIRS = other action util tools jgss krb5 smartcardio $(PKCS11) \
-          $(JGSS_WRAPPER) $(MSCAPI)
+# Build in-tree elliptic curve crypto provider only when
+# DISABLE_INTREE_EC is not set
+INTREE_EC = ec
+ifdef DISABLE_INTREE_EC
+  INTREE_EC =
+endif
+
+SUBDIRS       = $(INTREE_EC) other action util krb5
+SUBDIRS_misc  = jgss $(PKCS11) $(JGSS_WRAPPER) $(MSCAPI) smartcardio
+SUBDIRS_tools = tools
+include $(BUILDDIR)/common/Subdirs.gmk
 
 all build clean clobber::
 	$(SUBDIRS-loop)

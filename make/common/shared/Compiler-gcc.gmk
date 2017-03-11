@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -36,17 +36,15 @@ ifeq ($(PLATFORM), windows)
   CCC          = $(COMPILER_PATH)g++
   LIBEXE       = $(COMPILER_PATH)lib
   LINK         = $(COMPILER_PATH)link
-  RC           = $(MSDEVTOOLS_PATH)link
+  RC           = $(COMPILER_PATH)rc
   LINK32       = $(LINK)
   RSC          = $(RC)
   # unset any GNU Make settings of MFLAGS and MAKEFLAGS which may mess up nmake
   NMAKE          = MFLAGS= MAKEFLAGS= $(COMPILER_PATH)nmake -nologo
   ifeq ($(ARCH_DATA_MODEL), 32)
     CC_VER  = UNKNOWN
-    CC_TYPE = UNKNOWN
   else
     CC_VER  = UNKNOWN
-    CC_TYPE = UNKNOWN
   endif
   _LINK_VER :=$(shell $(LINK) 2>&1 | $(HEAD) -n 1)
   LINK_VER  :=$(call GetVersion,"$(_LINK_VER)")
@@ -69,7 +67,7 @@ ifeq ($(PLATFORM), linux)
     CXX            = $(COMPILER_PATH)g++
   endif
   # Option used to create a shared library
-  SHARED_LIBRARY_FLAG = -shared
+  SHARED_LIBRARY_FLAG = -shared -mimpure-text
   SUN_COMP_VER := $(shell $(CC) --verbose 2>&1 )
 
 endif

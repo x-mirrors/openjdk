@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,13 @@ PACKAGE = sun.tools.native2ascii
 PRODUCT = sun
 OTHER_JAVACFLAGS += -Xlint:serial -Werror
 include $(BUILDDIR)/common/Defs.gmk
+
+# This program must contain a manifest that defines the execution level
+# needed to follow standard Vista User Access Control Guidelines
+# This must be set before Program.gmk is included
+#
+BUILD_MANIFEST=true
+
 
 #
 # Files

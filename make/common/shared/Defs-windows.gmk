@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -21,12 +21,6 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-#
-
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
 #
 
 #
@@ -91,16 +85,31 @@ override INCREMENTAL_BUILD = false
 #         their own variable assigned with :=, then use FullPath.
 #
 
-# Use FullPath to get C:/ style non-spaces path. Never ends with a /!
 ifdef USING_CYGWIN
+# Macro to effectively do a toupper without an exec
+define ToUpper
+$(subst a,A,$(subst b,B,$(subst c,C,$(subst d,D,$(subst e,E,$(subst f,F,\
+$(subst g,G,$(subst h,H,$(subst i,I,$(subst j,J,$(subst k,K,$(subst l,L,\
+$(subst m,M,$(subst n,N,$(subst o,O,$(subst p,P,$(subst q,Q,$(subst r,R,\
+$(subst s,S,$(subst t,T,$(subst u,U,$(subst v,V,$(subst w,W,$(subst x,X,\
+$(subst y,Y,$(subst z,Z,$1))))))))))))))))))))))))))
+endef
+# All possible drive letters
+drives=a b c d e f g h i j k l m n o p q r s t v u w x y z
+# Convert /cygdrive/ paths to the mixed style without an exec of cygpath
+#   Must be a path with no spaces. /cygdrive/letter is always lowercase
+#   and letter:/ is always uppercase coming from cygpath.
+define MixedPath
+$(patsubst /%,$(CYGWIN_HOME)/%,$(sort $(filter-out /cygdrive/%,$(foreach drive,$(drives),$(patsubst /cygdrive/$(drive)/%,$(call ToUpper,$(drive)):/%,$1)))))
+endef
+# Use FullPath to get C:/ style non-spaces path. Never ends with a /!
 # We assume cygpath is available in the search path
 #    NOTE: Use of 'pwd' with CYGWIN will not get you a mixed style path!
-CYGPATH_CMD=cygpath -a -s -m
 define FullPath
-$(shell $(CYGPATH_CMD) $1 2> $(DEV_NULL))
+$(if $(word 2,$1),$(shell $(CYGPATH_CMD) $1 2> $(DEV_NULL)),$(call MixedPath,$(realpath $(subst ",,$1))))
 endef
 define OptFullPath
-$(shell if [ "$1" != "" -a -d "$1" ]; then $(CYGPATH_CMD) "$1"; else echo "$1"; fi)
+$(shell if [ "$1" != "" -a -d "$1" ]; then $(CYGPATH_CMD) "$1" 2> $(DEV_NULL); else echo "$1"; fi)
 endef
 else
 # Temporary until we upgrade to MKS 8.7, MKS pwd returns mixed mode path
@@ -124,10 +133,15 @@ _system_drive:=$(call CheckValue,_system_drive,C:)
 
 # UNIXCOMMAND_PATH: path to where the most common Unix commands are.
 #  NOTE: Must end with / so that it could be empty, allowing PATH usage.
+#        With cygwin, just use this as is don't use FullPath on it.
 ifdef ALT_UNIXCOMMAND_PATH
-  xALT_UNIXCOMMAND_PATH  :="$(subst \,/,$(ALT_UNIXCOMMAND_PATH))"
-  fxALT_UNIXCOMMAND_PATH :=$(call FullPath,$(xALT_UNIXCOMMAND_PATH))
-  UNIXCOMMAND_PATH       :=$(call PrefixPath,$(fxALT_UNIXCOMMAND_PATH))
+  ifdef USING_CYGWIN
+    UNIXCOMMAND_PATH       :=$(call PrefixPath,$(ALT_UNIXCOMMAND_PATH))
+  else
+    xALT_UNIXCOMMAND_PATH  :="$(subst \,/,$(ALT_UNIXCOMMAND_PATH))"
+    fxALT_UNIXCOMMAND_PATH :=$(call FullPath,$(xALT_UNIXCOMMAND_PATH))
+    UNIXCOMMAND_PATH       :=$(call PrefixPath,$(fxALT_UNIXCOMMAND_PATH))
+  endif
 else
   ifdef USING_CYGWIN
     UNIXCOMMAND_PATH :=$(call PrefixPath,/usr/bin)
@@ -435,9 +449,11 @@ DEVTOOLS_PATH:=$(call AltCheckSpaces,DEVTOOLS_PATH)
 
 # _BOOTDIR1: First choice for a Bootstrap JDK, previous released JDK.
 # _BOOTDIR2: Second choice
+# The _BOOTDIR3 is defind optionally.
 ifndef ALT_BOOTDIR
   _BOOTDIR1  =$(_system_drive)/jdk$(PREVIOUS_JDK_VERSION)
   _BOOTDIR2  =$(USRJDKINSTANCES_PATH)/jdk$(PREVIOUS_JDK_VERSION)
+  _BOOTDIR3  =$(SLASH_JAVA)/re/jdk/$(PREVIOUS_JDK_VERSION)/archive/fcs/binaries/$(PLATFORM)-$(ARCH)
 endif
 
 # Everybody needs the MSVCRNN runtime starting with VS2010
@@ -488,6 +504,70 @@ else
   endif
 endif
 
+# DEPLOY_MSSDK: Microsoft SDK for this platform (for deploy)
+ifdef ALT_DEPLOY_MSSDK
+  xALT_DEPLOY_MSSDK :="$(subst \,/,$(ALT_DEPLOY_MSSDK))"
+  DEPLOY_MSSDK      :=$(call FullPath,$(xALT_DEPLOY_MSSDK))
+else
+  DEPLOY_MSSDK      :=$(_ms_sdk)
+endif
+DEPLOY_MSSDK:=$(call AltCheckSpaces,DEPLOY_MSSDK)
+
+# INSTALL_MSSDK: Microsoft Installer SDK for this platform (for install)
+ifdef ALT_INSTALL_MSSDK
+  xALT_INSTALL_MSSDK :="$(subst \,/,$(ALT_INSTALL_MSSDK))"
+  INSTALL_MSSDK      :=$(call FullPath,$(xALT_INSTALL_MSSDK))
+else
+  INSTALL_MSSDK      :=$(_ms_sdk)
+endif
+INSTALL_MSSDK:=$(call AltCheckSpaces,INSTALL_MSSDK)
+
+# WSCRIPT: path to wscript.exe (used in creating install bundles)
+ifdef ALT_WSCRIPT
+  xALT_WSCRIPT :="$(subst \,/,$(ALT_WSCRIPT))"
+  WSCRIPT  =$(xALT_WSCRIPT)
+else
+  _WSCRIPT1 :=$(_system_root)/system32/wscript.exe
+  _WSCRIPT2 :=$(DEVTOOLS_PATH)wscript.exe
+  WSCRIPT  :=$(call FileExists,$(_WSCRIPT1),$(_WSCRIPT2))
+endif
+WSCRIPT:=$(call AltCheckSpaces,WSCRIPT)
+# batch mode no modal dialogs on errors, please.
+WSCRIPT += -B
+
+# CSCRIPT: path to cscript.exe (used in creating install bundles)
+ifdef ALT_CSCRIPT
+  xALT_CSCRIPT :="$(subst \,/,$(ALT_CSCRIPT))"
+  CSCRIPT  =$(xALT_CSCRIPT)
+else
+  _CSCRIPT1 :=$(_system_root)/system32/cscript.exe
+  _CSCRIPT2 :=$(DEVTOOLS_PATH)cscript.exe
+  CSCRIPT  :=$(call FileExists,$(_CSCRIPT1),$(_CSCRIPT2))
+endif
+CSCRIPT:=$(call AltCheckSpaces,CSCRIPT)
+
+# CABARC: path to cabarc.exe (used in creating install bundles)
+ifdef ALT_CABARC
+  xALT_CABARC :="$(subst \,/,$(ALT_CABARC))"
+  CABARC  =$(xALT_CABARC)
+else
+  _CABARC1 :=$(_system_root)/system32/cabarc.exe
+  _CABARC2 :=$(DEVTOOLS_PATH)cabarc.exe
+  CABARC  :=$(call FileExists,$(_CABARC1),$(_CABARC2))
+endif
+CABARC:=$(call AltCheckSpaces,CABARC)
+
+# MSICERT: path to msicert.exe (used in creating install bundles)
+ifdef ALT_MSICERT
+  xALT_MSICERT :="$(subst \,/,$(ALT_MSICERT))"
+  MSICERT  =$(xALT_MSICERT)
+else
+  _MSICERT1 :=$(INSTALL_MSSDK)/Bin/msicert.exe
+  _MSICERT2 :=$(DEVTOOLS_PATH)msicert.exe
+  MSICERT   :=$(call FileExists,$(_MSICERT1),$(_MSICERT2))
+endif
+MSICERT:=$(call AltCheckSpaces,MSICERT)
+
 # Import JDK images allow for partial builds, components not built are
 #    imported (or copied from) these import areas when needed.
 
@@ -514,7 +594,12 @@ JDK_IMPORT_PATH:=$(call AltCheckValue,JDK_IMPORT_PATH)
 ifdef ALT_HOTSPOT_IMPORT_PATH
   HOTSPOT_IMPORT_PATH :=$(call FullPath,$(ALT_HOTSPOT_IMPORT_PATH))
 else
-  HOTSPOT_IMPORT_PATH =$(JDK_IMPORT_PATH)
+  # Default locations include the current $OUTPUTDIR, RE Promotions,
+  # and a JDK.  Please be aware the JDK does not include a Kernel VM.
+  _HOTSPOT_IMPORT_PATH1 = $(OUTPUTDIR)/hotspot/import
+  _HOTSPOT_IMPORT_PATH2 = $(PROMOTED_BUILD_DISTDIR)/hotspot/import
+  _HOTSPOT_IMPORT_PATH3 = $(JDK_IMPORT_PATH)
+   HOTSPOT_IMPORT_PATH := $(call DirExists,$(_HOTSPOT_IMPORT_PATH1),$(_HOTSPOT_IMPORT_PATH2),$(_HOTSPOT_IMPORT_PATH3))
 endif
 HOTSPOT_IMPORT_PATH:=$(call AltCheckSpaces,HOTSPOT_IMPORT_PATH)
 HOTSPOT_IMPORT_PATH:=$(call AltCheckValue,HOTSPOT_IMPORT_PATH)

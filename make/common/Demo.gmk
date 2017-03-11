@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -71,8 +71,11 @@ DEMO_BUILD_AREA     = $(DEMOCLASSDIR)/$(PRODUCT)/$(DEMONAME)
 
 # Destination "src" directory
 DEMO_BUILD_SRCDIR     = $(DEMO_BUILD_AREA)/src
-DEMO_BUILD_SRCZIP     = $(DEMO_BUILD_AREA)/src.zip
-DEMO_SOURCE_ZIP       = $(DEMO_DESTDIR)/src.zip
+
+ifndef DEMO_SKIP_SRCZIP
+  DEMO_BUILD_SRCZIP     = $(DEMO_BUILD_AREA)/src.zip
+  DEMO_SOURCE_ZIP       = $(DEMO_DESTDIR)/src.zip
+endif
 
 # Place to hold the jar image we are creating
 DEMO_JAR_IMAGE      = $(DEMO_BUILD_AREA)/jar_image
@@ -115,8 +118,11 @@ DEMO_ALL_NATIVE_SOURCES += $(filter %.h,$(DEMO_ALL_FILES))
 DEMO_ALL_NATIVE_SOURCES += $(filter %.hpp,$(DEMO_ALL_FILES))
 
 # If we have java sources, then define the jar file we will create
+ifndef DEMO_JAR_NAME
+  DEMO_JAR_NAME = $(DEMONAME).jar
+endif
 ifneq ($(strip $(DEMO_JAVA_SOURCES)),)
-  DEMO_JAR            = $(DEMO_DESTDIR)/$(DEMONAME).jar
+  DEMO_JAR            = $(DEMO_DESTDIR)/$(DEMO_JAR_NAME)
 endif
 
 # If we have native sources, define the native library we will create
@@ -205,9 +211,13 @@ $(DEMO_BUILD_SRCDIR)/%: $(DEMO_SRCDIR)/../java_crw_demo/%
 endif
 
 # Jar manifest file
-$(DEMO_MANIFEST): 
+MAINMANIFEST  = $(JDK_TOPDIR)/make/tools/manifest.mf
+$(DEMO_MANIFEST): $(MAINMANIFEST)
 	@$(prep-target)
-	$(ECHO) "Main-Class: $(DEMO_MAINCLASS)" > $@
+	$(SED) -e "s#@@RELEASE@@#$(RELEASE)#"           \
+               -e "s#@@COMPANY_NAME@@#$(COMPANY_NAME)#" \
+               $(MAINMANIFEST) >> $@
+	$(ECHO) "Main-Class: $(DEMO_MAINCLASS)" >> $@
 ifdef DEMO_MANIFEST_ATTR
 	$(ECHO) "$(DEMO_MANIFEST_ATTR)" >> $@
 endif
@@ -249,21 +259,34 @@ $(DEMO_JAR): \
 	$(MKDIR) -p $(DEMO_JAR_IMAGE)
 	$(JAVAC_CMD) -d $(DEMO_JAR_IMAGE) -sourcepath $(DEMO_BUILD_SRCDIR) \
 	    @$(DEMO_JAVAC_INPUT)
+  ifeq ($(DEMO_INCL_SRC),true)
+	$(CP) $(DEMO_JAVA_SOURCES:%=$(DEMO_BUILD_SRCDIR)/%) $(DEMO_JAR_IMAGE)
+  endif
+  ifeq ($(DEMO_ONLY_SRC),true)
+	$(RM) -r $(DEMO_JAR_IMAGE)
+	$(MKDIR) -p $(DEMO_JAR_IMAGE)
+	$(CP) -r $(DEMO_BUILD_SRCDIR)/* $(DEMO_JAR_IMAGE)
+    ifneq ($(DEMO_TOPFILES),)
+	$(CP) $(DEMO_ROOT)/$(DEMO_TOPFILES) $(DEMO_JAR_IMAGE)
+    endif
+  endif
 	$(BOOT_JAR_CMD) -cfm $@ $(DEMO_MANIFEST) \
 	     -C $(DEMO_JAR_IMAGE) . \
-	     $(JAR_JFLAGS)
+	     $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 endif
 
-# Create a src.zip file
-$(DEMO_BUILD_SRCZIP): $(DEMO_FULL_SOURCES)
+ifndef DEMO_SKIP_SRCZIP
+  # Create a src.zip file
+  $(DEMO_BUILD_SRCZIP): $(DEMO_FULL_SOURCES)
 	@$(prep-target)
 	$(CD) $(DEMO_BUILD_AREA)/src && $(ZIPEXE) -q -r ../$(@F) .
 
-# Install the destination src.zip file and create the src tree
-$(DEMO_SOURCE_ZIP): $(DEMO_BUILD_SRCZIP)
+  # Install the destination src.zip file and create the src tree
+  $(DEMO_SOURCE_ZIP): $(DEMO_BUILD_SRCZIP)
 	$(install-file)
+endif
 
 # Native library building
 ifdef DEMO_LIBRARY
@@ -287,6 +310,7 @@ $(DEMO_LIBRARY): $(DEMO_FULL_OBJECTS)
 	@$(prep-target)
 	$(LINK.demo) $(SHARED_LIBRARY_FLAG) $(CC_PROGRAM_OUTPUT_FLAG)$@ \
 	    $(DEMO_FULL_OBJECTS) $(LDLIBS.demo)
+	@$(call binary_file_verification,$@)
 
   # Generation of any javah include file, make sure objects are dependent on it
   ifdef DEMO_NATIVECLASS
@@ -317,7 +341,11 @@ bundles: $(DEMO_BUILD_SRCZIP)
 # Applets are special, no jar file, no src.zip, everything expanded.
 ifdef DEMO_IS_APPLET
 	@$(ECHO) "Expanding jar file into demos area at $(DEMO_DESTDIR)"
-	( $(CD) $(DEMO_DESTDIR) && $(BOOT_JAR_CMD) -xfv $(DEMONAME).jar && $(RM) -r META-INF $(DEMONAME).jar )
+	( $(CD) $(DEMO_DESTDIR) && \
+	  $(BOOT_JAR_CMD) -xfv $(DEMO_JAR_NAME) \
+	     $(BOOT_JAR_JFLAGS) && \
+	  $(RM) -r META-INF $(DEMO_JAR_NAME) && \
+	  $(java-vm-cleanup) )
 	@( $(CD) $(DEMO_DESTDIR) && $(java-vm-cleanup) )
 	@$(ECHO) "Expanding source into demos area at $(DEMO_DESTDIR)"
 	( $(CD) $(DEMO_DESTDIR) && $(UNZIP) -o src.zip && $(RM) src.zip )
@@ -356,7 +384,7 @@ clean clobber:
 	$(RM) -r $(DEMO_BUILD_AREA)
 	$(RM) -r $(DEMO_DESTDIR)
 
-# This should not be needed, but some versions of GNU amke have a bug that
+# This should not be needed, but some versions of GNU make have a bug that
 #   sometimes deleted these files  for some strange  and unknown reason 
 #   (GNU make version 3.78.1 has the problem, GNU make version 3.80 doesn't?)
 .PRECIOUS: $(DEMO_FULL_SOURCES) $(DEMO_BUILD_SRCZIP) $(DEMO_SOURCE_ZIP)

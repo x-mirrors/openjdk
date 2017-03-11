@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,6 @@
 BUILDDIR = ../..
 PACKAGE = java.security
 PRODUCT = sun
-JAVAC_MAX_WARNINGS = false
-JAVAC_LINT_OPTIONS = -Xlint:all,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -39,35 +37,34 @@ AUTO_FILES_JAVA_DIRS = java/security
 # Directories
 #
 
-# The default security properties file is for linux
-PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-linux
-SUNPKCS11   =
+PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security
 
 ifeq ($(PLATFORM), solaris)
 PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-solaris
-SUNPKCS11   = sunpkcs11
 
 else # PLATFORM
 
-# Register Microsoft CryptoAPI provider only on (non-64-bit) Windows platform.
+# Register Microsoft CryptoAPI provider only on Windows platform.
 ifeq ($(PLATFORM), windows)
-  ifneq ($(ARCH_DATA_MODEL), 64)
-    PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-windows
-  endif
+  PROPS_SRC   = $(TOPDIR)/src/share/lib/security/java.security-windows
 endif
 endif # PLATFORM
 
 
 PROPS_BUILD = $(LIBDIR)/security/java.security
 
-SUNPKCS11_SRC   = $(TOPDIR)/src/share/lib/security/sunpkcs11-solaris.cfg
-SUNPKCS11_BUILD = $(LIBDIR)/security/sunpkcs11-solaris.cfg
-
 POLICY_SRC =	$(TOPDIR)/src/share/lib/security/java.policy
 POLICY_BUILD = $(LIBDIR)/security/java.policy
 
 CACERTS_SRC =	$(CACERTS_FILE)
 CACERTS_BUILD = $(LIBDIR)/security/cacerts
+
+ifndef OPENJDK
+  BLACKLIST_SRC =	$(CLOSED_SHARE_SRC)/lib/security/blacklist
+  BLACKLIST_BUILD = $(LIBDIR)/security/blacklist
+  TRUSTEDLIBS_SRC = $(CLOSED_SHARE_SRC)/lib/security/trusted.libraries
+  TRUSTEDLIBS_BUILD = $(LIBDIR)/security/trusted.libraries
+endif
 
 FILES_class = $(FILES_java:%.java=$(CLASSBINDIR)/%.class)
 
@@ -76,22 +73,25 @@ FILES_class = $(FILES_java:%.java=$(CLASSBINDIR)/%.class)
 #
 include $(BUILDDIR)/common/Rules.gmk
 
-build: properties $(SUNPKCS11) policy cacerts
+ifdef OPENJDK
+build: properties policy cacerts
+else
+build: properties policy cacerts blacklist trustedlibs
+endif
 
 install: all
 
 properties: classes  $(PROPS_BUILD)
 
-sunpkcs11: classes $(SUNPKCS11_BUILD)
-
 policy: classes  $(POLICY_BUILD)
 
 cacerts: classes $(CACERTS_BUILD)
 
-$(PROPS_BUILD): $(PROPS_SRC)
-	$(install-file)
+blacklist: classes $(BLACKLIST_BUILD)
 
-$(SUNPKCS11_BUILD): $(SUNPKCS11_SRC)
+trustedlibs: classes $(TRUSTEDLIBS_BUILD)
+
+$(PROPS_BUILD): $(PROPS_SRC)
 	$(install-file)
 
 $(POLICY_BUILD): $(POLICY_SRC)
@@ -100,9 +100,15 @@ $(POLICY_BUILD): $(POLICY_SRC)
 $(CACERTS_BUILD): $(CACERTS_SRC)
 	$(install-file)
 
+$(BLACKLIST_BUILD): $(BLACKLIST_SRC)
+	$(install-file)
+
+$(TRUSTEDLIBS_BUILD): $(TRUSTEDLIBS_SRC)
+	$(install-file)
+
 clean clobber:: .delete.classlist
 	$(RM) -r $(CLASSBINDIR)/java/security
-	$(RM) $(PROPS_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(SUNPKCS11_BUILD)
+	$(RM) $(PROPS_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(BLACKLIST_BUILD) $(TRUSTEDLIBS_BUILD)
 
 # Additional Rule for building sun.security.util
 $(CLASSBINDIR)/%.class: $(SHARE_SRC)/sun/%.java

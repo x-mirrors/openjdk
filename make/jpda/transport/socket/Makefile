@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -37,11 +37,11 @@ FILES_m = mapfile-vers
 include $(BUILDDIR)/common/Defs.gmk
 
 ifeq ($(PLATFORM), linux)
-  OTHER_LDLIBS += -lnsl $(LIBSOCKET) -lpthread
+  OTHER_LDLIBS += $(LIBNSL) $(LIBSOCKET) -lpthread
 endif
 
 ifeq ($(PLATFORM), solaris)
-  OTHER_LDLIBS += -lnsl $(LIBSOCKET)
+  OTHER_LDLIBS += $(LIBNSL) $(LIBSOCKET)
 endif
 
 ifeq ($(PLATFORM), windows)

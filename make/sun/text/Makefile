@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2001, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -112,7 +112,7 @@ $(CLASSDESTDIR)/sun/text/resources/% : $(TEXT_SRCDIR)/%
 $(LOCALEDATA_JAR): $(EXTDIR) $(FILES_class) $(BIFILES) $(SPECIALFILES)
 	$(prep-target)
 	$(BOOT_JAR_CMD) -cf $@ -C $(CLASSDESTDIR) sun \
-	     $(JAR_JFLAGS)
+	     $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 build: $(LOCALEDATA_JAR)

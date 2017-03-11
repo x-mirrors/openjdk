@@ -1,4 +1,4 @@
-# Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -40,24 +40,25 @@ COPYRIGHT_URL-7 = $(DOCSDIR_URL)/legal/cpyr.html
 COPYRIGHT_URL = $(COPYRIGHT_URL-$(JDK_MINOR_VERSION))
 
 # Url to bug filing site
-BUG_SUBMIT_URL = http://bugs.sun.com/services/bugreport/index.jsp
+BUG_SUBMIT_URL = http://bugreport.sun.com/bugreport/
 
 # Common line for how to submit a bug or rfe
-BUG_SUBMIT_LINE = <a href=\"$(BUG_SUBMIT_URL)\">Submit a bug or feature</a>
+BUG_SUBMIT_LINE = <a href="$(BUG_SUBMIT_URL)">Submit a bug or feature</a>
 
 # Url to devdocs page
 #   Was: http://java.sun.com/javase/6/webnotes/devdocs-vs-specs.html
-DEV_DOCS_URL-5 = http://java.sun.com/j2se/1.5.0/docs
-DEV_DOCS_URL-6 = http://download.oracle.com/docs/cd/E17409_01/javase/6/docs
-DEV_DOCS_URL-7 = http://download.oracle.com/docs/cd/E17409_01/javase/7/docs
+DEV_DOCS_URL-5 = http://java.sun.com/j2se/1.5.0/docs/index.html
+DEV_DOCS_URL-6 = http://download.oracle.com/javase/6/docs/index.html
+DEV_DOCS_URL-7 = http://download.oracle.com/javase/7/docs/index.html
 DEV_DOCS_URL = $(DEV_DOCS_URL-$(JDK_MINOR_VERSION))
+DOCS_BASE_URL = http://download.oracle.com/javase/7/docs
 
 # Url to Java Language Spec
-JLS3_URL = http://java.sun.com/docs/books/jls/
+#JLS3_URL = http://java.sun.com/docs/books/jls/
 
 # Common Java trademark line
 JAVA_TRADEMARK_LINE = Java is a trademark or registered trademark of \
-$(COMPANY_NAME) in the US and other countries.
+$(FULL_COMPANY_NAME) in the US and other countries.
 
 #
 # Definitions for imported components
@@ -84,6 +85,11 @@ ALL_SOURCE_DIRS = $(SHARE_SRC)/classes \
                   $(SHARE_SRC)/../solaris/classes \
 	          $(SHARE_SRC)/../windows/classes \
 		  $(SHARE_SRC)/doc/stub
+
+# List of directories that actually exist
+ALL_EXISTING_SOURCE_DIRS := $(wildcard $(ALL_SOURCE_DIRS))
+
+# List with classpath separator between them
 EMPTY:=
 SPACE:= $(EMPTY) $(EMPTY)
 RELEASEDOCS_SOURCEPATH = \
@@ -161,36 +167,52 @@ JDKJRE2COREAPI    = ../../api
 
 # Common bottom argument
 define CommonBottom # year
-<font size=\"-1\"><p> $(call CopyrightLine,,$1,)</font>
+<font size="-1"><br> $(call CopyrightLine,,$1,)</font>
 endef
 
 # Common trademark bottom argument (Not sure why this is used sometimes)
 define CommonTrademarkBottom # year
-<font size=\"-1\">\
+<font size="-1">\
 $(BUG_SUBMIT_LINE)<br>$(JAVA_TRADEMARK_LINE)<br>\
 $(call CopyrightLine,,$1,$(COMPANY_ADDRESS))\
 </font>
 endef
 
+# Common echo of option
+define OptionOnly # opt
+$(PRINTF) "%s\n" "$1"
+endef
+define OptionPair # opt arg
+$(PRINTF) "%s '%s'\n" "$1" '$2'
+endef
+define OptionTrip # opt arg arg
+$(PRINTF) "%s '%s' '%s'\n" "$1" '$2' '$3'
+endef
+
 # Core api bottom argument (with special sauce)
-COREAPI_BOTTOM = <font size=\"-1\"> $(BUG_SUBMIT_LINE)\
+COREAPI_BOTTOM = <font size="-1"> $(BUG_SUBMIT_LINE)\
 <br>For further API reference and developer documentation, \
-see <a href=\"$(DEV_DOCS_URL)\">Java SE Documentation</a>. \
+see <a href="$(DEV_DOCS_URL)" target="_blank">Java SE Documentation</a>. \
 That documentation contains more detailed, developer-targeted descriptions, \
 with conceptual overviews, definitions of terms, workarounds, \
-and working code examples.<p>\
+and working code examples.<br>\
 $(call CopyrightLine,$(COPYRIGHT_URL),$(FIRST_COPYRIGHT_YEAR),)\
 </font>
 
 # Common javadoc options used by all
 COMMON_JAVADOCFLAGS =					\
                 $(NO_PROPRIETARY_API_WARNINGS)          \
-		-source 1.5				\
 		-quiet					\
                 -use					\
                 -keywords				\
 		$(ADDITIONAL_JAVADOCFLAGS)
-ADDITIONAL_JAVADOCFLAGS =
+
+ifdef OPENJDK
+  ADDITIONAL_JAVADOCFLAGS =				\
+                -Xdocrootparent $(DOCS_BASE_URL)
+else
+  ADDITIONAL_JAVADOCFLAGS =
+endif
 
 # Draft used for non-fcs documents
 JDK_IS_FCS = false
@@ -208,11 +230,11 @@ ifeq ($(JDK_IS_FCS),false)
     DRAFT_WINTITLE = $(BUILD_NUMBER)
     # Early access top text (not used in FCS releases)
     COREAPI_TOP_EARLYACCESS = \
-<div style=\"background-color: \#EEEEEE\"> \
-<div style=\"padding: 6px; margin-top: 2px; margin-bottom: 6px; \
+<div style="background-color: \#EEEEEE"> \
+<div style="padding: 6px; margin-top: 2px; margin-bottom: 6px; \
 margin-left: 6px; margin-right: 6px; text-align: justify; \
 font-size: 80%; font-family: Helvetica, Arial, sans-serif; \
-font-weight: normal;\"> \
+font-weight: normal;"> \
 Please note that the specifications and other information \
 contained herein are not final and are subject to change. \
 The information is being made available to you solely for purpose of \
@@ -240,7 +262,8 @@ include NON_CORE_PKGS.gmk
 # Default target is same as docs target, create core api and all others it can
 #
 
-all docs: coredocs otherdocs
+all: docs
+docs: coredocs otherdocs
 
 #################################################################
 # Production Targets -- USE THESE TARGETS WHEN:
@@ -276,15 +299,9 @@ COREAPI_WINDOWTITLE  = Java Platform SE $(JDK_MINOR_VERSION)
 COREAPI_HEADER = \
 <strong>Java$(TRADEMARK)&nbsp;Platform<br>Standard&nbsp;Ed.&nbsp;$(JDK_MINOR_VERSION)</strong>
 
-# Ignored tags
-IGNORED_TAGS =	beaninfo revised since.unbundled spec specdefault Note ToDo
-
 # Java language specification cite
-JLS3_CITE = <a href=\"$(JLS3_URL)\"> \
-		The Java Language Specification, Third Edition</a>
-TAG_JLS3 = -tag 'jls3:a:See <cite>$(JLS3_CITE)</cite>:'
-
-TAGS = $(IGNORED_TAGS:%=-tag %:X) $(TAG_JLS3)
+TAG_JLS = jls:a:See <cite> \
+The Java&trade; Language Specification</cite>:
 
 # Overview file for core apis
 COREAPI_OVERVIEW = $(SHARE_SRC)/classes/overview-core.html
@@ -309,19 +326,26 @@ $(COREAPI_INDEX_FILE): $(COREAPI_OPTIONS_FILE) $(COREAPI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(COREAPI_OPTIONS_FILE): $(COREAPI_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "$(TAGS)"						; \
-	  $(ECHO) "-encoding ISO-8859-1"				; \
-	  $(ECHO) "-splitIndex"						; \
-	  $(ECHO) "-overview $(COREAPI_OVERVIEW)" 			; \
-	  $(ECHO) "-doctitle '$(COREAPI_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(COREAPI_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(COREAPI_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(COREAPI_BOTTOM)$(DRAFT_BOTTOM)'"		; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ISO-8859-1)			; \
+	  $(call OptionPair,-tag,beaninfo:X)				; \
+	  $(call OptionPair,-tag,revised:X)				; \
+	  $(call OptionPair,-tag,since.unbundled:X)			; \
+	  $(call OptionPair,-tag,spec:X)				; \
+	  $(call OptionPair,-tag,specdefault:X)				; \
+	  $(call OptionPair,-tag,Note:X)				; \
+	  $(call OptionPair,-tag,ToDo:X)				; \
+          $(call OptionPair,-tag,$(TAG_JLS)) 				; \
+	  $(call OptionOnly,-splitIndex)				; \
+	  $(call OptionPair,-overview,$(COREAPI_OVERVIEW))		; \
+	  $(call OptionPair,-doctitle,$(COREAPI_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(COREAPI_WINDOWTITLE) $(DRAFT_WINTITLE)) ;\
+	  $(call OptionPair,-header,$(COREAPI_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(COREAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
         ) >> $@
 ifdef COREAPI_TOP_EARLYACCESS
-	@$(ECHO) "-top '$(COREAPI_TOP_EARLYACCESS)'" >> $@
+	@$(call OptionPair,-top,$(COREAPI_TOP_EARLYACCESS)) >> $@
 endif
 
 # Create a file with the package names in it
@@ -370,16 +394,16 @@ $(MIRROR_INDEX_FILE): $(MIRROR_OPTIONS_FILE) $(MIRROR_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(MIRROR_OPTIONS_FILE): $(MIRROR_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-overview $(MIRROR_OVERVIEW)" 			; \
-	  $(ECHO) "-doctitle '$(MIRROR_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(MIRROR_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(MIRROR_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(MIRROR_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-group $(MIRROR_GROUPNAME) $(MIRROR_REGEXP)"		; \
-	  $(ECHO) "-linkoffline $(MIRROR2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionPair,-overview,$(MIRROR_OVERVIEW))		; \
+	  $(call OptionPair,-doctitle,$(MIRROR_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(MIRROR_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(MIRROR_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(MIRROR_BOTTOM)$(DRAFT_BOTTOM)) 	; \
+	  $(call OptionTrip,-group,$(MIRROR_GROUPNAME),$(MIRROR_REGEXP)); \
+	  $(call OptionTrip,-linkoffline,$(MIRROR2COREAPI),$(COREAPI_DOCSDIR)); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -427,16 +451,16 @@ $(DOCLETAPI_INDEX_FILE): $(DOCLETAPI_OPTIONS_FILE) $(DOCLETAPI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(DOCLETAPI_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-breakiterator"					; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-doctitle '$(DOCLETAPI_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(DOCLETAPI_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(DOCLETAPI_HEADER)$(DRAFT_HEADER)'"	; \
-	  $(ECHO) "-bottom '$(DOCLETAPI_BOTTOM)$(DRAFT_BOTTOM)'"	; \
-	  $(ECHO) "-group $(DOCLETAPI_GROUPNAME) $(DOCLETAPI_REGEXP)"	; \
-	  $(ECHO) "-linkoffline $(DOCLETAPI2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-breakiterator)				; \
+	  $(call OptionPair,-doctitle,$(DOCLETAPI_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(DOCLETAPI_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(DOCLETAPI_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(DOCLETAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-group,$(DOCLETAPI_GROUPNAME),$(DOCLETAPI_REGEXP)); \
+	  $(call OptionTrip,-linkoffline,$(DOCLETAPI2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -487,13 +511,13 @@ $(TAGLETAPI_INDEX_FILE): $(TAGLETAPI_OPTIONS_FILE) $(TAGLETAPI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(TAGLETAPI_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nonavbar"						; \
-	  $(ECHO) "-noindex"						; \
-	  $(ECHO) "-bottom '$(TAGLETAPI_BOTTOM)$(DRAFT_BOTTOM)'"			; \
-	  $(ECHO) "-linkoffline $(TAGLETAPI2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nonavbar)					; \
+	  $(call OptionOnly,-noindex)					; \
+	  $(call OptionPair,-bottom,$(TAGLETAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(TAGLETAPI2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -538,16 +562,16 @@ $(DOMAPI_INDEX_FILE): $(DOMAPI_OPTIONS_FILE) $(DOMAPI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(DOMAPI_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-splitIndex"						; \
-	  $(ECHO) "-doctitle '$(DOMAPI_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(DOMAPI_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(DOMAPI_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(DOMAPI_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-group $(DOMAPI_GROUPNAME) $(DOMAPI_REGEXP)"		; \
-	  $(ECHO) "-linkoffline $(DOMAPI2COREAPI) $(COREAPI_DOCSDIR)/" 	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-splitIndex)				; \
+	  $(call OptionPair,-doctitle,$(DOMAPI_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(DOMAPI_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(DOMAPI_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(DOMAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-group,$(DOMAPI_GROUPNAME),$(DOMAPI_REGEXP)); \
+	  $(call OptionTrip,-linkoffline,$(DOMAPI2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -600,15 +624,15 @@ $(JDI_INDEX_FILE): $(JDI_OPTIONS_FILE) $(JDI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(JDI_OPTIONS_FILE): $(JDI_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-overview $(JDI_OVERVIEW)" 				; \
-	  $(ECHO) "-doctitle '$(JDI_DOCTITLE)'"				; \
-	  $(ECHO) "-windowtitle '$(JDI_WINDOWTITLE) $(DRAFT_WINTITLE)'"	; \
-	  $(ECHO) "-header '$(JDI_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(JDI_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(JDI2COREAPI) $(COREAPI_DOCSDIR)/" 	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionPair,-overview,$(JDI_OVERVIEW))			; \
+	  $(call OptionPair,-doctitle,$(JDI_DOCTITLE))			; \
+	  $(call OptionPair,-windowtitle,$(JDI_WINDOWTITLE) $(DRAFT_WINTITLE)); \
+	  $(call OptionPair,-header,$(JDI_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(JDI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(JDI2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -688,15 +712,15 @@ $(JAAS_INDEX_FILE): $(JAAS_OPTIONS_FILE) $(JAAS_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(JAAS_OPTIONS_FILE): $(JAAS_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-overview $(JAAS_OVERVIEW)" 				; \
-	  $(ECHO) "-doctitle '$(JAAS_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(JAAS_WINDOWTITLE) $(DRAFT_WINTITLE)'"; \
-	  $(ECHO) "-header '$(JAAS_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(JAAS_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(JAAS2COREAPI) $(COREAPI_DOCSDIR)/" 	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionPair,-overview,$(JAAS_OVERVIEW))			; \
+	  $(call OptionPair,-doctitle,$(JAAS_DOCTITLE))			; \
+	  $(call OptionPair,-windowtitle,$(JAAS_WINDOWTITLE) $(DRAFT_WINTITLE)); \
+	  $(call OptionPair,-header,$(JAAS_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(JAAS_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(JAAS2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -740,16 +764,16 @@ $(JGSS_INDEX_FILE): $(JGSS_OPTIONS_FILE) $(JGSS_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(JGSS_OPTIONS_FILE): $(JGSS_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-overview $(JGSS_OVERVIEW)" 				; \
-	  $(ECHO) "-doctitle '$(JGSS_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(JGSS_WINDOWTITLE) $(DRAFT_WINTITLE)'"; \
-	  $(ECHO) "-header '$(JGSS_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(JGSS_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(JGSS2COREAPI) $(COREAPI_DOCSDIR)/" 	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-overview,$(JGSS_OVERVIEW))			; \
+	  $(call OptionPair,-doctitle,$(JGSS_DOCTITLE))			; \
+	  $(call OptionPair,-windowtitle,$(JGSS_WINDOWTITLE) $(DRAFT_WINTITLE)); \
+	  $(call OptionPair,-header,$(JGSS_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(JGSS_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(JGSS2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -792,15 +816,15 @@ $(SMARTCARDIO_INDEX_FILE): $(SMARTCARDIO_OPTIONS_FILE) $(SMARTCARDIO_PACKAGES_FI
 # Create file with javadoc options in it
 $(SMARTCARDIO_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-doctitle '$(SMARTCARDIO_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(SMARTCARDIO_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(SMARTCARDIO_HEADER)$(DRAFT_HEADER)'"	; \
-	  $(ECHO) "-bottom '$(SMARTCARDIO_BOTTOM)$(DRAFT_BOTTOM)'"	; \
-	  $(ECHO) "-linkoffline $(SMARTCARDIO2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-doctitle,$(SMARTCARDIO_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(SMARTCARDIO_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(SMARTCARDIO_HEADER)$(DRAFT_HEADER)); \
+	  $(call OptionPair,-bottom,$(SMARTCARDIO_BOTTOM)$(DRAFT_BOTTOM)); \
+	  $(call OptionTrip,-linkoffline,$(SMARTCARDIO2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -842,15 +866,15 @@ $(HTTPSERVER_INDEX_HTML): $(HTTPSERVER_OPTIONS_FILE) $(HTTPSERVER_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(HTTPSERVER_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-doctitle '$(HTTPSERVER_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(HTTPSERVER_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(HTTPSERVER_HEADER)$(DRAFT_HEADER)'"	; \
-	  $(ECHO) "-bottom '$(HTTPSERVER_BOTTOM)$(DRAFT_BOTTOM)'"	; \
-	  $(ECHO) "-linkoffline $(HTTPSERVER2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-doctitle,$(HTTPSERVER_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(HTTPSERVER_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(HTTPSERVER_HEADER)$(DRAFT_HEADER)); \
+	  $(call OptionPair,-bottom,$(HTTPSERVER_BOTTOM)$(DRAFT_BOTTOM)); \
+	  $(call OptionTrip,-linkoffline,$(HTTPSERVER2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -902,16 +926,16 @@ $(MGMT_INDEX_FILE): $(MGMT_OPTIONS_FILE) $(MGMT_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(MGMT_OPTIONS_FILE): $(MGMT_OVERVIEW)
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-overview $(MGMT_OVERVIEW)" 				; \
-	  $(ECHO) "-doctitle '$(MGMT_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(MGMT_WINDOWTITLE) $(DRAFT_WINTITLE)'"; \
-	  $(ECHO) "-header '$(MGMT_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(MGMT_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(MGMT2COREAPI) $(COREAPI_DOCSDIR)/" 	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-overview,$(MGMT_OVERVIEW))			; \
+	  $(call OptionPair,-doctitle,$(MGMT_DOCTITLE))			; \
+	  $(call OptionPair,-windowtitle,$(MGMT_WINDOWTITLE) $(DRAFT_WINTITLE)); \
+	  $(call OptionPair,-header,$(MGMT_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(MGMT_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(MGMT2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -953,15 +977,15 @@ $(ATTACH_INDEX_HTML): $(ATTACH_OPTIONS_FILE) $(ATTACH_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(ATTACH_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-doctitle '$(ATTACH_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(ATTACH_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(ATTACH_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(ATTACH_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(ATTACH2COREAPI) $(COREAPI_DOCSDIR)/"	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-doctitle,$(ATTACH_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(ATTACH_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(ATTACH_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(ATTACH_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(ATTACH2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -1003,15 +1027,15 @@ $(JCONSOLE_INDEX_HTML): $(JCONSOLE_OPTIONS_FILE) $(JCONSOLE_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(JCONSOLE_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-nodeprecatedlist"					; \
-	  $(ECHO) "-doctitle '$(JCONSOLE_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(JCONSOLE_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(JCONSOLE_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(JCONSOLE_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-linkoffline $(JCONSOLE2COREAPI) $(COREAPI_DOCSDIR)/"; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-doctitle,$(JCONSOLE_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(JCONSOLE_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(JCONSOLE_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(JCONSOLE_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(JCONSOLE2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -1058,15 +1082,16 @@ $(TREEAPI_INDEX_HTML): $(TREEAPI_OPTIONS_FILE) $(TREEAPI_PACKAGES_FILE)
 # Create file with javadoc options in it
 $(TREEAPI_OPTIONS_FILE):
 	$(prep-target)
-	@($(ECHO) "$(COMMON_JAVADOCFLAGS)"				; \
-	  $(ECHO) "-sourcepath \"$(RELEASEDOCS_SOURCEPATH)\""		; \
-	  $(ECHO) "-encoding ascii"					; \
-	  $(ECHO) "-doctitle '$(TREEAPI_DOCTITLE)'"			; \
-	  $(ECHO) "-windowtitle '$(TREEAPI_WINDOWTITLE) $(DRAFT_WINTITLE)'";\
-	  $(ECHO) "-header '$(TREEAPI_HEADER)$(DRAFT_HEADER)'"		; \
-	  $(ECHO) "-bottom '$(TREEAPI_BOTTOM)$(DRAFT_BOTTOM)'"		; \
-	  $(ECHO) "-group $(TREEAPI_GROUPNAME) $(TREEAPI_REGEXP)"	; \
-	  $(ECHO) "-linkoffline $(TREEAPI2COREAPI) $(COREAPI_DOCSDIR)/"	; \
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionPair,-doctitle,$(TREEAPI_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(TREEAPI_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(TREEAPI_HEADER)$(DRAFT_HEADER))	; \
+          $(call OptionPair,-tag,$(TAG_JLS)) 				; \
+	  $(call OptionPair,-bottom,$(TREEAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-group,$(TREEAPI_GROUPNAME),$(TREEAPI_REGEXP)); \
+	  $(call OptionTrip,-linkoffline,$(TREEAPI2COREAPI),$(COREAPI_DOCSDIR)/); \
         ) >> $@
 
 # Create a file with the package names in it
@@ -1076,11 +1101,61 @@ $(TREEAPI_PACKAGES_FILE): $(DIRECTORY_CACHE) $(call PackageDependencies,$(TREEAP
 
 #############################################################
 #
+# sctpdocs
+#
+
+ALL_OTHER_TARGETS += sctpdocs
+
+SCTPAPI_DOCDIR      := $(JRE_API_DOCSDIR)/nio/sctp/spec
+SCTPAPI2COREAPI     := ../../../$(JDKJRE2COREAPI)
+SCTPAPI_DOCTITLE    := SCTP API
+SCTPAPI_WINDOWTITLE := SCTP API
+SCTPAPI_HEADER      := <strong>SCTP API</strong>
+SCTPAPI_BOTTOM      := $(call CommonBottom,$(SCTPAPI_FIRST_COPYRIGHT_YEAR))
+# SCTPAPI_PKGS is located in NON_CORE_PKGS.gmk
+
+SCTPAPI_INDEX_HTML    = $(SCTPAPI_DOCDIR)/index.html
+SCTPAPI_OPTIONS_FILE  = $(DOCSTMPDIR)/sctp.options
+SCTPAPI_PACKAGES_FILE = $(DOCSTMPDIR)/sctp.packages
+
+sctpdocs: $(SCTPAPI_INDEX_HTML)
+
+# Set relative location to core api document root
+$(SCTSCTSCTP: GET2DOCSDIR=$(SCTPAPI2COREAPI)/..
+
+# Run javadoc if the index file is out of date or missing
+$(SCTPAPI_INDEX_HTML): $(SCTPAPI_OPTIONS_FILE) $(SCTPAPI_PACKAGES_FILE)
+	$(prep-javadoc)
+	$(call JavadocSummary,$(SCTPAPI_OPTIONS_FILE),$(SCTPAPI_PACKAGES_FILE))
+	$(JAVADOC_CMD) $(JAVADOC_VM_MEMORY_FLAGS) -d $(@D) \
+	  @$(SCTPAPI_OPTIONS_FILE) @$(SCTPAPI_PACKAGES_FILE)
+
+# Create file with javadoc options in it
+$(SCTPAPI_OPTIONS_FILE):
+	$(prep-target)
+	@($(call OptionOnly,$(COMMON_JAVADOCFLAGS))			; \
+	  $(call OptionPair,-sourcepath,$(RELEASEDOCS_SOURCEPATH))	; \
+	  $(call OptionPair,-encoding,ascii)				; \
+	  $(call OptionOnly,-nodeprecatedlist)				; \
+	  $(call OptionPair,-doctitle,$(SCTPAPI_DOCTITLE))		; \
+	  $(call OptionPair,-windowtitle,$(SCTPAPI_WINDOWTITLE) $(DRAFT_WINTITLE));\
+	  $(call OptionPair,-header,$(SCTPAPI_HEADER)$(DRAFT_HEADER))	; \
+	  $(call OptionPair,-bottom,$(SCTPAPI_BOTTOM)$(DRAFT_BOTTOM))	; \
+	  $(call OptionTrip,-linkoffline,$(SCTPAPI2COREAPI),$(COREAPI_DOCSDIR)/); \
+        ) >> $@
+
+# Create a file with the package names in it
+$(SCTPAPI_PACKAGES_FILE): $(DIRECTORY_CACHE) $(call PackageDependencies,$(SCTPAPI_PKGS))
+	$(prep-target)
+	$(call PackageFilter,$(SCTPAPI_PKGS))
+
+#############################################################
+#
 # Get a cache of all the directories
 
-$(DIRECTORY_CACHE): $(ALL_SOURCE_DIRS)
+$(DIRECTORY_CACHE): $(ALL_EXISTING_SOURCE_DIRS)
 	$(prep-target)
-	@for cp in $(ALL_SOURCE_DIRS) ; do 		\
+	@for cp in $(ALL_EXISTING_SOURCE_DIRS) ; do 	\
 	  $(ECHO) "$(FIND) $${cp} -type f >> $@"; 	\
 	  $(FIND) $${cp} -type f >> $@; 		\
 	done

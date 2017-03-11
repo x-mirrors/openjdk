@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,13 @@ PACKAGE = sun.tools.jconsole
 PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk
 
+# This program must contain a manifest that defines the execution level
+# needed to follow standard Vista User Access Control Guidelines
+# This must be set before Program.gmk is included
+#
+BUILD_MANIFEST=true
+
+
 JARFILE = $(LIBDIR)/jconsole.jar
 
 OTHER_JAVACFLAGS += -encoding iso8859-1
@@ -46,21 +53,21 @@ AUTO_FILES_JAVA_DIRS =  sun/tools/jconsole \
 
 FILES_png = $(PNG_FILES:%.png=$(CLASSBINDIR)/%.png)
 FILES_gif = $(GIF_FILES:%.gif=$(CLASSBINDIR)/%.gif)
-FILES_prop = $(PROP_FILES:%.properties=$(CLASSBINDIR)/%.properties)
+
 build: $(GENSRCDIR)/sun/tools/jconsole/Version.java
 
 #
 # Resources
 #
 LOCALE_SET_DEFINITION = jdk
-RESOURCE_BUNDLES_UNCOMPILED_PROPERTIES = $(PKGDIR)/resources/messages.properties
+RESOURCE_BUNDLES_JAVA = $(PKGDIR)/resources/JConsoleResources.java
 
 #
 # Rules.
 #
 include $(BUILDDIR)/common/Classes.gmk
 
-build: $(FILES_png) $(FILES_gif) $(FILES_prop) $(TEMPDIR)/manifest $(JARFILE)
+build: $(FILES_png) $(FILES_gif) $(TEMPDIR)/manifest $(JARFILE)
 
 $(GENSRCDIR)/sun/tools/jconsole/Version.java: \
                 $(SHARE_SRC)/classes/sun/tools/jconsole/Version.java.template
@@ -72,17 +79,17 @@ $(CLASSBINDIR)/$(PKGDIR)/resources/%: $(SHARE_SRC)/classes/$(PKGDIR)/resources/%
 	$(install-file)
 
 $(TEMPDIR)/manifest: $(SHARE_SRC)/classes/$(PKGDIR)/manifest
-	$(install-file)
+	$(install-manifest-file)
 
 #
 # Extra rule to build jconsole.jar
 #
 
-$(JARFILE): $(LIBDIR) $(FILES_class) $(FILES_png) $(FILES_gif) $(FILES_prop) $(TEMPDIR)/manifest
+$(JARFILE): $(LIBDIR) $(FILES_class) $(FILES_png) $(FILES_gif) $(TEMPDIR)/manifest
 	$(BOOT_JAR_CMD) -cfm $(JARFILE) $(TEMPDIR)/manifest \
                -C $(CLASSBINDIR) sun/tools/jconsole \
                -C $(CLASSBINDIR) com/sun/tools/jconsole \
-		    $(JAR_JFLAGS)
+		    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 clean clobber::

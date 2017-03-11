@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2008, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -90,24 +90,6 @@ else # PLATFORM unix
 
 endif # PLATFORM
 
-# Turn off aliasing with GCC for ExtensionSubtables.cpp (and others on GCC < 4.3)
-# Turn off strict overflow with GCC for IndicRearrangementProcessor.cpp on GCC >= 4.3
-# Ensure signed integers wrap with GCC for IndicRearrangementProcessor.cpp on GCC < 4.3
-ifeq ($(PLATFORM), linux)
-  CXXFLAGS += $(CXXFLAGS_$(@F))
-  CXXFLAGS_ExtensionSubtables.o = -fno-strict-aliasing
-ifeq "$(shell expr \( $(CC_VER_MAJOR) \> 4 \) \| \( \( $(CC_VER_MAJOR) = 4 \) \& \( $(CC_VER_MINOR) \>= 3 \) \))" "0"
-  # GCC >= 4.3.  This flag is not known in gcc 4.1.2.
-  CXXFLAGS_IndicRearrangementProcessor.o := -fno-strict-overflow
-  CXXFLAGS_IndicRearrangementProcessor2.o := -fno-strict-overflow
-else
-  CXXFLAGS_ContextualGlyphSubstProc.o = -fno-strict-aliasing
-  CXXFLAGS_IndicRearrangementProcessor.o := -fwrapv -fno-strict-aliasing
-  CXXFLAGS_IndicRearrangementProcessor2.o := -fwrapv
-  CXXFLAGS_MorphTables2.o = -fno-strict-aliasing
-endif
-endif
-
 #In the non-OpenJDK mode we need to build T2K
 ifndef OPENJDK
 t2k:
@@ -139,16 +121,20 @@ FILES_m=mapfile-vers.openjdk
 #
 #TODO: rework this to avoid hardcoding library name in the makefile
 #
-library:: $(LIB_LOCATION)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX)
-
-$(LIB_LOCATION)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX):
 ifeq ($(PLATFORM), windows)
-	$(CP) $(FREETYPE_LIB_PATH)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX) $@
+    FREETYPE_LIB = $(LIB_LOCATION)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX)
+    OTHER_LDLIBS += $(FREETYPE_LIB_PATH)/freetype.lib
 else 
   ifeq ($(USING_SYSTEM_FT_LIB), false)
-	$(CP) $(FREETYPE_LIB_PATH)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX) $@.6
+    FREETYPE_LIB = $(LIB_LOCATION)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX).6
   endif
+  OTHER_LDLIBS += -L$(FREETYPE_LIB_PATH) -lfreetype
 endif 
+
+library:: $(FREETYPE_LIB)
+
+$(FREETYPE_LIB):
+	$(CP) $(FREETYPE_LIB_PATH)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX) $@
 endif
 
 #ifeq ($(PLATFORM), solaris)
@@ -163,7 +149,6 @@ include $(BUILDDIR)/common/Library.gmk
 # Add to the ambient vpath to pick up files in subdirectories
 #
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)
-vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/bidi
 vpath %.cpp   $(SHARE_SRC)/native/$(PKGDIR)/layout
 vpath %.cpp   $(SHARE_SRC)/native/$(PKGDIR)
 
@@ -177,7 +162,6 @@ ifndef OPENJDK
   CPPFLAGS += -I$(CLOSED_SRC)/share/native/$(PKGDIR)/t2k
 else
   CPPFLAGS += -I$(FREETYPE_HEADERS_PATH) -I$(FREETYPE_HEADERS_PATH)/freetype2
-  OTHER_LDLIBS += $(FREETYPE_LIB)
 endif
 
 ifeq ($(PLATFORM), windows)
@@ -205,7 +189,6 @@ endif # PLATFORM
 
 CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR) \
             -I$(SHARE_SRC)/native/$(PKGDIR)/layout \
-            -I$(SHARE_SRC)/native/$(PKGDIR)/bidi \
 	    -I$(SHARE_SRC)/native/sun/awt/image/cvutils \
 	    -I$(PLATFORM_SRC)/native/sun/awt \
 	    -I$(SHARE_SRC)/native/sun/awt/debug \

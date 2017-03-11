@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 FILES_c = \
     cmscam02.c \
-    cmscam97.c \
     cmscgats.c \
     cmscnvrt.c \
     cmserr.c \
@@ -35,13 +34,17 @@ FILES_c = \
     cmsio0.c \
     cmsio1.c \
     cmslut.c \
-    cmsmatsh.c \
+    cmsmd5.c \
     cmsmtrx.c \
     cmsnamed.c \
+    cmsopt.c \
     cmspack.c \
     cmspcs.c \
+    cmsplugin.c \
     cmsps2.c \
     cmssamp.c \
+    cmssm.c \
+    cmstypes.c \
     cmsvirt.c \
     cmswtpnt.c \
     cmsxform.c \

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007, 2009, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -128,7 +128,6 @@ ifndef OPENJDK
   endif
 endif
 
-JAVAC_MAX_WARNINGS = true
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -157,12 +156,7 @@ include $(BUILDDIR)/common/Classes.gmk
 #
 
 ifdef OPENJDK
-ifdef UNLIMITED_CRYPTO
-POLICY = install-unlimited
-else
-POLICY = install-limited
-endif
-all: build-jar install-jar build-policy $(POLICY)
+all: build-jar install-jar build-policy install-limited
 else  # OPENJDK
 ifeq ($(strip $(FILES_java)),)
 all:
@@ -237,7 +231,7 @@ build-jar: $(UNSIGNED_DIR)/jce.jar
 $(UNSIGNED_DIR)/jce.jar: prebuild build $(JCE_MANIFEST_FILE)
 	$(prep-target)
 	$(BOOT_JAR_CMD) cmf $(JCE_MANIFEST_FILE) $@ $(JAR_DIRS) \
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	$(CP) -r $(CLASSDESTDIR)/* $(CLASSBINDIR)
 	@$(java-vm-cleanup)
 
@@ -275,7 +269,7 @@ $(UNSIGNED_POLICY_BUILDDIR)/unlimited/US_export_policy.jar:		\
 	$(prep-target)
 	$(BOOT_JAR_CMD) cmf policy/unlimited/UNLIMITED $@		\
 	    -C policy/unlimited default_US_export.policy		\
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 $(UNSIGNED_POLICY_BUILDDIR)/unlimited/local_policy.jar:			\
@@ -284,7 +278,7 @@ $(UNSIGNED_POLICY_BUILDDIR)/unlimited/local_policy.jar:			\
 	$(prep-target)
 	$(BOOT_JAR_CMD) cmf policy/unlimited/UNLIMITED $@		\
 	    -C policy/unlimited default_local.policy			\
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 #
@@ -309,7 +303,7 @@ $(UNSIGNED_POLICY_BUILDDIR)/limited/local_policy.jar:			\
 	$(BOOT_JAR_CMD) cmf policy/limited/LIMITED $@			\
 	    -C policy/limited default_local.policy			\
 	    -C policy/limited exempt_local.policy			\
-	    $(JAR_JFLAGS)
+	    $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 UNSIGNED_POLICY_FILES = \
@@ -376,8 +370,7 @@ $(SIGNED_POLICY_BUILDDIR)/limited/local_policy.jar:		\
 
 CLOSED_DIR = $(BUILDDIR)/closed/javax/crypto
 
-release: $(SIGNED_DIR)/jce.jar sign-policy $(CLOSED_DIR)/doc/COPYRIGHT.html \
-         $(CLOSED_DIR)/doc/README.txt
+release: $(SIGNED_DIR)/jce.jar sign-policy $(CLOSED_DIR)/doc/README.txt
 	$(RM) -r \
 	    $(JCE_BUILD_DIR)/release/UnlimitedJCEPolicy              \
 	    $(JCE_BUILD_DIR)/release/jce.jar                         \
@@ -393,7 +386,6 @@ release: $(SIGNED_DIR)/jce.jar sign-policy $(CLOSED_DIR)/doc/COPYRIGHT.html \
 	$(CP) \
 	    $(SIGNED_POLICY_BUILDDIR)/unlimited/US_export_policy.jar \
 	    $(SIGNED_POLICY_BUILDDIR)/unlimited/local_policy.jar     \
-	    $(CLOSED_DIR)/doc/COPYRIGHT.html                         \
 	    $(CLOSED_DIR)/doc/README.txt                             \
 	    $(JCE_BUILD_DIR)/release/UnlimitedJCEPolicy
 	cd $(JCE_BUILD_DIR)/release ; \
@@ -431,7 +423,7 @@ else
 INSTALL_POLICYDIR = $(SIGNED_POLICY_BUILDDIR)
 endif
 
-install-limited: \
+install-limited-jars: \
 	    $(INSTALL_POLICYDIR)/limited/US_export_policy.jar	\
 	    $(INSTALL_POLICYDIR)/limited/local_policy.jar
 	$(MKDIR) -p $(POLICY_DESTDIR)
@@ -439,24 +431,28 @@ install-limited: \
 	    $(POLICY_DESTDIR)/US_export_policy.jar		\
 	    $(POLICY_DESTDIR)/local_policy.jar
 	$(CP) $^ $(POLICY_DESTDIR)
+
+install-limited: install-limited-jars
 ifndef OPENJDK
 	$(release-warning)
 endif
 
-install-unlimited: \
+install-unlimited-jars: \
 	    $(INSTALL_POLICYDIR)/unlimited/US_export_policy.jar	\
-	    $(INSTALL_POLICYDIR)/unlimited/local_policy.jar
+	    $(INSTALL_POLICYDIR)/unlimited/local_policy.jar 
 	$(MKDIR) -p $(POLICY_DESTDIR)
 	$(RM) \
 	    $(POLICY_DESTDIR)/US_export_policy.jar		\
 	    $(POLICY_DESTDIR)/local_policy.jar
 	$(CP) $^ $(POLICY_DESTDIR)
+
+install-unlimited: install-unlimited-jars
 ifndef OPENJDK
 	$(release-warning)
 endif
 
 ifndef OPENJDK
-install-prebuilt:
+install-prebuilt-jars:
 	@$(ECHO) "\n>>>Installing prebuilt JCE framework..."
 	$(RM) $(JAR_DESTFILE) \
 	    $(POLICY_DESTDIR)/US_export_policy.jar \
@@ -466,8 +462,9 @@ install-prebuilt:
 	    $(PREBUILT_DIR)/jce/US_export_policy.jar \
 	    $(PREBUILT_DIR)/jce/local_policy.jar \
 	    $(POLICY_DESTDIR)
-endif
 
+install-prebuilt: install-prebuilt-jars
+endif
 
 # =====================================================
 # Support routines.

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2009, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -21,12 +21,6 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-#
-
-#
-# This file has been modified by Azul Systems, Inc. in 2014. These
-# modifications are Copyright (c) 2014 Azul Systems, Inc., and are made
-# available on the same license terms set forth above. 
 #
 
 BUILDDIR = ../..
@@ -126,7 +120,6 @@ ifeq  ($(PLATFORM), linux)
 FILES_c = $(FILES_2D_c)
 FILES_c += awt_LoadLibrary.c
 OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
-OTHER_CFLAGS += -DMOTIF_VERSION=2
 OTHER_LDLIBS = $(JVMLIB) $(LIBM) -ldl
 endif
 
@@ -181,6 +174,10 @@ endif
 include $(BUILDDIR)/common/Mapfile-vers.gmk
 include $(BUILDDIR)/common/Library.gmk
 
+COMPILEFONTCONFIG_FLAGS =
+ifdef ALT_COMPILEFONTCONFIG_FLAGS
+  COMPILEFONTCONFIG_FLAGS += $(ALT_COMPILEFONTCONFIG_FLAGS)
+endif
 build: fontconfigs
 
 
@@ -208,7 +205,7 @@ endif
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS/LINUX
 endif # PLATFORM
 
-clobber clean:: java2d.clean motif.clean fontconfigs.clean
+clobber clean:: java2d.clean fontconfigs.clean
 
 ifndef OPENJDK
 clobber clean:: dgalib.clean 
@@ -254,7 +251,6 @@ endif # PLATFORM
 
 ifeq ($(PLATFORM), windows)
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv WINDOWS
-
 OTHER_LDLIBS = kernel32.lib user32.lib gdi32.lib winspool.lib \
                imm32.lib ole32.lib uuid.lib shell32.lib \
                comdlg32.lib winmm.lib comctl32.lib \
@@ -279,12 +275,6 @@ endif # PLATFORM
 ifneq ($(PLATFORM), windows)
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv SOLARIS/LINUX
 
-ifeq ($(STATIC_MOTIF),true)
-  LIBXM = $(MOTIF_LIB)/libXm.a -lXp
-else # STATIC_MOTIF
-  LIBXM = -lXm
-endif # STATIC_MOTIF
-
 LIBXTST = -lXtst
 
 # Use -lXmu for EditRes support
@@ -295,20 +285,7 @@ LIBXMU	        = $(LIBXMU_$(VARIANT))
 #
 # Extra C flags.
 #
-INIT += motif
 
-motif: $(OBJDIR)/.library.dirs.$(ARCH) $(OBJDIR)/.library.motif.$(ARCH)
-
-$(OBJDIR)/.library.motif.$(ARCH): $(MOTIF_LIB)/libXm.so.3
-	$(CP) $(MOTIF_LIB)/libXm.so.3 $(LIBDIR)/$(LIBARCH)/$(TSOBJDIR)
-	$(CD) $(LIBDIR)/$(LIBARCH)/$(TSOBJDIR); $(RM) libXm.so; \
-		$(LN) -s libXm.so.3 libXm.so
-	@-$(TOUCH) $(OBJDIR)/.library.motif.$(ARCH)
-
-clean:: motif.clean
-
-motif.clean :
-	$(RM) $(LIBDIR)/$(LIBARCH)/$(TSOBJDIR)/libXm.*
 
 ifndef OPENJDK
 
@@ -340,15 +317,15 @@ dgalibs: $(DGALIBS)
 
 $(LIBDIR)/$(LIBARCH)/libxinerama.so: $(CLOSED_SRC)/solaris/lib/$(ARCH)/libxinerama.so
 	$(install-file)
-	$(CHMOD) a+x $@
+	$(call chmod-file, a+x)
 
 $(LIBDIR)/$(LIBARCH)/libjdgaSUNW%.so: $(CLOSED_SRC)/solaris/lib/$(ARCH)/libjdgaSUNW%.so
 	$(install-file)
-	$(CHMOD) a+x $@
+	$(call chmod-file, a+x)
 
 $(LIBDIR)/$(LIBARCH)/libjdgaSUNWafb.so: $(LIBDIR)/$(LIBARCH)/libjdgaSUNWffb.so
 	$(prep-target)
-	$(LN) -s libjdgaSUNWffb.so $(LIBDIR)/$(LIBARCH)/libjdgaSUNWafb.so
+	$(call install-sym-link, libjdgaSUNWffb.so)
 
 clean:: dgalib.clean
 
@@ -368,8 +345,7 @@ ifeq ($(PLATFORM), windows)
 
 FONTCONFIGS_SRC = $(PLATFORM_SRC)/classes/sun/awt/windows
 _FONTCONFIGS = \
-        fontconfig.properties \
-        fontconfig.98.properties 
+        fontconfig.properties
 
 FONTCONFIGS_SRC_PREFIX =
 
@@ -385,20 +361,16 @@ _FONTCONFIGS	= \
 	fontconfig.properties				\
 	fontconfig.SuSE.properties                      \
 	fontconfig.Ubuntu.properties                    \
-	fontconfig.Fedora.properties			\
-	fontconfig.RedHat.6.properties
+	fontconfig.Fedora.properties
 else
 
 FONTCONFIGS_SRC	= $(CLOSED_SRC)/solaris/classes/sun/awt/fontconfigs
 _FONTCONFIGS	= \
 	fontconfig.properties				\
-	fontconfig.RedHat.properties			\
-	fontconfig.RedHat.2.1.properties		\
-	fontconfig.RedHat.3.properties		\
-	fontconfig.RedHat.4.properties			\
-	fontconfig.Sun.properties			\
+	fontconfig.RedHat.5.5.properties		\
 	fontconfig.Turbo.properties			\
-	fontconfig.SuSE.properties
+	fontconfig.SuSE.10.properties                   \
+	fontconfig.SuSE.11.properties
 endif
 
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
@@ -411,9 +383,7 @@ ifeq ($(PLATFORM), solaris)
 
 FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
 _FONTCONFIGS	= \
-	fontconfig.properties	\
-	fontconfig.5.9.properties	\
-	fontconfig.5.8.properties
+	fontconfig.properties
 
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 
@@ -433,8 +403,8 @@ COMPILEFONTCONFIG_JARFILE = $(BUILDTOOLJARDIR)/compilefontconfig.jar
 $(LIBDIR)/%.bfc: $(FONTCONFIGS_SRC)/$(FONTCONFIGS_SRC_PREFIX)%.properties \
     $(COMPILEFONTCONFIG_JARFILE)
 	$(prep-target)
-	$(BOOT_JAVA_CMD) -jar $(COMPILEFONTCONFIG_JARFILE) $< $@
-	$(CHMOD) 444 $(@)
+	$(BOOT_JAVA_CMD) -jar $(COMPILEFONTCONFIG_JARFILE) $(COMPILEFONTCONFIG_FLAGS) $< $@
+	$(call chmod-file, 444)
 	@$(java-vm-cleanup)
 
 fontconfigs.clean :
@@ -508,8 +478,7 @@ ifneq ($(PLATFORM), windows)
 #
 
 ifeq ($(PLATFORM), linux)
-CPPFLAGS += -I$(MOTIF_DIR)/include \
-            -I$(OPENWIN_HOME)/include \
+CPPFLAGS += -I$(OPENWIN_HOME)/include \
             -I$(OPENWIN_HOME)/include/X11/extensions \
             -I$(PLATFORM_SRC)/native/$(PKGDIR)/font 
 endif
@@ -535,7 +504,7 @@ CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/debug \
 	    $(EVENT_MODEL)
 
 ifeq ($(PLATFORM), linux)
-LDFLAGS += -L$(MOTIF_LIB) -L$(OPENWIN_LIB)
+LDFLAGS += -L$(OPENWIN_LIB)
 endif
 
 LDFLAGS += -L$(LIBDIR)/$(LIBARCH)/$(TSOBJDIR) \
@@ -550,4 +519,3 @@ CLASSES.export += java.io.InputStream \
 
 .PHONY: dgalibs dgalib.clean fontconfigs fontconfigs.clean
 
-# DO NOT DELETE

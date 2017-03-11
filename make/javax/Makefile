@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -30,41 +30,27 @@
 BUILDDIR = ..
 include $(BUILDDIR)/common/Defs.gmk
 
-#
-# Files to compile
-#
-AUTO_FILES_JAVA_DIRS =       \
-    javax/naming             \
-    com/sun/naming/internal  \
-    javax/net                \
-    javax/script             \
-    javax/security/auth      \
-    javax/security/cert      \
-    javax/security/sasl      \
-    javax/smartcardio        \
-    javax/tools              \
-    javax/xml
+SUBDIRS = others
+
+SUBDIRS_management = management
+
+SUBDIRS_misc = \
+        crypto \
+        sql \
+        rmi
 
 # imageio uses xml, so build it last
+SUBDIRS_desktop = \
+        accessibility \
+        print \
+        swing \
+        sound \
+        imageio
 
-SUBDIRS = \
-	accessibility \
-	print \
-	swing \
-	crypto \
-	sound \
-	sql \
-	rmi \
-	management \
-	imageio
+include $(BUILDDIR)/common/Subdirs.gmk
 
 all build:
 	$(SUBDIRS-loop)
 clean clobber::
 	$(SUBDIRS-loop)
-
-#
-# Rules
-#
-include $(BUILDDIR)/common/Classes.gmk
 

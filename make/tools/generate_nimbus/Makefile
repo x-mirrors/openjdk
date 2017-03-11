@@ -61,7 +61,7 @@ all: $(TEMPLATE_DEST) $(BUILDTOOL_JAR_FILE)
 
 include $(BUILDDIR)/common/BuildToolJar.gmk
 
-$(TEMPLATE_DEST): $(TEMPLATE_FILES:%=$(SHARE_SRC)/classes/com/sun/java/swing/plaf/nimbus/%)
+$(TEMPLATE_DEST): $(TEMPLATE_FILES:%=$(SHARE_SRC)/classes/javax/swing/plaf/nimbus/%)
 	$(MKDIR) -p $@
 	$(RM) $(TEMPLATE_FILES:%=$@/%)
 	$(CP) $^ $@

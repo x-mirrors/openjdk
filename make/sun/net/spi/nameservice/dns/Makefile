@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,12 @@
 #
 
 #
-# Makefile for building JNDI service provider toolkit
+# Makefile for building JNDI DNS name service provider
 #
 
 BUILDDIR = ../../../../..
-JAVAC_MAX_WARNINGS = true
+
+# dns should probably be its own module
 PACKAGE = sun.net.spi.nameservice.dns
 PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk
@@ -68,7 +69,7 @@ $(JARFILE): $(CLASSDESTDIR)/META-INF/services/$(SERVICE_DESCRIPTION) \
 	$(BOOT_JAR_CMD) -cf $(JARFILE) \
 	     -C $(CLASSDESTDIR) sun \
 	     -C $(CLASSDESTDIR) META-INF \
-	     $(JAR_JFLAGS)
+	     $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 
 include $(BUILDDIR)/common/Classes.gmk

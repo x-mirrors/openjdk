@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -44,53 +44,86 @@ MS_RUNTIME_STATIC = true
 
 include $(BUILDDIR)/common/Defs.gmk
 
-ZLIB_VERSION = 1.1.3
 ZIP_SRC = $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 LAUNCHER_SHARE_SRC = $(SHARE_SRC)/bin
 LAUNCHER_PLATFORM_SRC = $(PLATFORM_SRC)/bin
+
+ifeq ($(ZERO_BUILD), true)
+ERGO_FAMILY=zero
+else
+ifeq ($(ARCH_FAMILY), amd64)
+ERGO_FAMILY=i586
+else
+ERGO_FAMILY=$(ARCH_FAMILY)
+endif
+endif
+
 
 #
 # Files to compile.
 #
 FILES_c = \
+	java.c \
+	splashscreen_stubs.c \
+	java_md.c \
 	parse_manifest.c \
 	version_comp.c \
 	wildcard.c \
 	jli_util.c \
 	inflate.c \
-	infblock.c \
 	inftrees.c \
-	infcodes.c \
 	inffast.c \
-	infutil.c \
 	zadler32.c \
+	zcrc32.c \
 	zutil.c
 
-OTHER_CPPFLAGS += -DEXPAND_CLASSPATH_WILDCARDS
-
-ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
-	LIB_LOCATION = $(LIBDIR)/$(LIBARCH)/jli
-	# Guarantee very limited dependencies
-	LDLIBS = -lc
+ifneq ($(PLATFORM), windows)
+  FILES_c += ergo.c 
+  ERGO_ARCH_FILE = ergo_$(ERGO_FAMILY).c
+  # if the architecture specific ergo file exists then
+  # use it, else use the generic definitions from ergo.c
+  ifneq ($(wildcard $(LAUNCHER_PLATFORM_SRC)/$(ERGO_ARCH_FILE)),)
+    FILES_c += $(ERGO_ARCH_FILE)
+  else
+    OTHER_CPPFLAGS += -DUSE_GENERIC_ERGO
+  endif
 endif
 
+# Names of arch directories
+LIBARCH_DEFINES = -DLIBARCHNAME='"$(LIBARCH)"'
+ifeq ($(PLATFORM), solaris)
+  LIBARCH_DEFINES += -DLIBARCH32NAME='"$(LIBARCH32)"'
+  LIBARCH_DEFINES += -DLIBARCH64NAME='"$(LIBARCH64)"'
+endif
+
+OTHER_CPPFLAGS += $(LIBARCH_DEFINES)
+
+
+ifneq ($(PLATFORM), windows)	# UNIX systems
+        LD_RUNPATH_EXTRAS += ..
+	LIB_LOCATION = $(LIBDIR)/$(LIBARCH)/jli
+	# Note: its important to keep this order meaning -lc is the
+	# last library otherwise it could cause compatibility issues
+	# by pulling in SUNW_private symbols from libc
+	LDLIBS = -ldl -lc
+ifeq ($(USE_PTHREADS),true)
+	LDLIBS += -lpthread
+endif # USE_PTHREADS 
+endif # PLATFORM
+
 ifeq ($(PLATFORM), windows)
-	EXTRA_LIBS =
+	EXTRA_LIBS = advapi32.lib \
+		     comctl32.lib \
+		     user32.lib
+
 	JAVALIB =
-	OTHER_LCF =  -export:JLI_ParseManifest \
-		     -export:JLI_JarUnpackFile \
-		     -export:JLI_FreeManifest \
-		     -export:JLI_ManifestIterate
-	OTHER_LCF += -export:JLI_ExactVersionId \
-		     -export:JLI_PrefixVersionId \
-		     -export:JLI_AcceptableRelease \
-		     -export:JLI_ValidVersionString
-	OTHER_LCF += -export:JLI_WildcardExpandClasspath
-	OTHER_LCF += -export:JLI_MemAlloc \
-		     -export:JLI_MemRealloc \
-		     -export:JLI_StringDup \
-		     -export:JLI_MemFree \
-		     -export:JLI_StrCCmp
+	OTHER_LCF =  -export:JLI_Launch \
+		     -export:JLI_ManifestIterate \
+		     -export:JLI_SetTraceLauncher \
+		     -export:JLI_ReportErrorMessage \
+		     -export:JLI_ReportErrorMessageSys \
+		     -export:JLI_ReportMessage \
+		     -export:JLI_ReportExceptionDescription
 
 endif
 
@@ -118,15 +151,9 @@ include $(BUILDDIR)/common/Library.gmk
 #
 ifeq ($(PLATFORM), windows)
 
-STATIC_LIBRARY_DIR = $(OBJDIR)/static
-STATIC_LIBRARY_NAME = $(LIBPREFIX)$(LIBRARY).lib
-STATIC_LIBRARY = $(STATIC_LIBRARY_DIR)/$(STATIC_LIBRARY_NAME)
+STATIC_LIBRARY = $(OBJDIR)/static/$(LIBPREFIX)$(LIBRARY).lib
 
-$(STATIC_LIBRARY_DIR): $(OBJDIR)
-	@$(prep-target)
-	@$(MKDIR) $(STATIC_LIBRARY_DIR)
-
-$(STATIC_LIBRARY): $(STATIC_LIBRARY_DIR)
+$(STATIC_LIBRARY): $(FILES_o)
 	@$(prep-target)
 	$(LIBEXE) -nologo -out:$@ $(FILES_o)
 
@@ -137,5 +164,4 @@ endif	# PLATFORM
 #
 # Add to ambient vpath so we pick up the library files
 #
-vpath %.c $(LAUNCHER_SHARE_SRC) $(ZIP_SRC)
-
+vpath %.c $(LAUNCHER_SHARE_SRC) $(ZIP_SRC) $(LAUNCHER_PLATFORM_SRC)

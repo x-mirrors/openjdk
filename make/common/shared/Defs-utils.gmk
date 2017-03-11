@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2007, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,7 @@
 #            UTILS_COMMAND_PATH
 #         /usr/bin/ 
 #            UTILS_USR_BIN_PATH
-#         /usr/ccs/bin/ (sccs, m4, lex, yacc, as, ar, strip, mcs)
+#         /usr/ccs/bin/ (m4, lex, yacc, as, ar, strip, mcs)
 #            UTILS_CCS_BIN_PATH
 #         Dev Tools: zip, unzip, etc that we may have special versions of
 #            UTILS_DEVTOOL_PATH
@@ -67,24 +67,26 @@ ifeq ($(PLATFORM),windows)
   UTILS_DEVTOOL_PATH=$(DEVTOOLS_PATH)
 endif
 
-# Ant
-ifdef ANT_HOME
-  ANT = $(ANT_HOME)/bin/ant
-  ifneq ($(shell test -x $(ANT); echo $$?), 0)
-    $(error "$(ANT) not found; please update ANT_HOME")
-  endif
+# Utilities
+ifdef CROSS_COMPILE_ARCH
+  AR             = $(COMPILER_PATH)ar
+  AS             = $(COMPILER_PATH)as
+  LD             = $(COMPILER_PATH)ld
+  MCS            = $(COMPILER_PATH)mcs
+  NM             = $(COMPILER_PATH)nm
+  STRIP          = $(COMPILER_PATH)strip
 else
-  ANT = ant
-  ifneq ($(shell which $(ANT) > /dev/null; echo $$?), 0)
-    $(error "\"ant\" not found; please set ANT_HOME or put \"ant\" on your PATH")
-  endif
+  AR             = $(UTILS_CCS_BIN_PATH)ar
+  AS             = $(UTILS_CCS_BIN_PATH)as
+  LD             = $(UTILS_CCS_BIN_PATH)ld
+  MCS            = $(UTILS_CCS_BIN_PATH)mcs
+  NM             = $(UTILS_CCS_BIN_PATH)nm
+  STRIP          = $(UTILS_CCS_BIN_PATH)strip
 endif
 
-# Utilities
 ADB            = $(UTILS_COMMAND_PATH)adb
-AR             = $(UTILS_CCS_BIN_PATH)ar
-AS             = $(UTILS_CCS_BIN_PATH)as
 BASENAME       = $(UTILS_COMMAND_PATH)basename
+BZIP2          = $(UTILS_COMMAND_PATH)bzip2
 CAT            = $(UTILS_COMMAND_PATH)cat
 CHMOD          = $(UTILS_COMMAND_PATH)chmod
 CMP            = $(UTILS_USR_BIN_PATH)cmp
@@ -97,6 +99,7 @@ DATE           = $(UTILS_COMMAND_PATH)date
 DF             = $(UTILS_COMMAND_PATH)df
 DIFF           = $(UTILS_USR_BIN_PATH)diff
 DIRNAME        = $(UTILS_USR_BIN_PATH)dirname
+DUMP           = $(UTILS_CCS_BIN_PATH)dump
 ECHO           = $(UTILS_COMMAND_PATH)echo
 EGREP          = $(UTILS_COMMAND_PATH)egrep
 EXPR           = $(UTILS_USR_BIN_PATH)expr
@@ -106,34 +109,34 @@ FMT            = $(UTILS_COMMAND_PATH)fmt
 GDB            = $(UTILS_USR_BIN_PATH)gdb
 GREP           = $(UTILS_COMMAND_PATH)grep
 GUNZIP         = $(UTILS_COMMAND_PATH)gunzip
+# GZIP is used for solaris. Linux and windows use tar czf
+GZIP           = $(UTILS_COMMAND_PATH)gzip
 HEAD           = $(UTILS_USR_BIN_PATH)head
+HG             = hg
 ID             = $(UTILS_COMMAND_PATH)id
 ISAINFO        = $(UTILS_COMMAND_PATH)isainfo
-KSH	       = $(UTILS_COMMAND_PATH)ksh
-LD             = $(UTILS_CCS_BIN_PATH)ld
+KSH            = $(UTILS_COMMAND_PATH)ksh
+LDD            = $(UTILS_USR_BIN_PATH)ldd
 LEX            = $(UTILS_CCS_BIN_PATH)lex
 LN             = $(UTILS_COMMAND_PATH)ln
 LS             = $(UTILS_COMMAND_PATH)ls
-MCS            = $(UTILS_CCS_BIN_PATH)mcs
 M4             = $(UTILS_CCS_BIN_PATH)m4
 MKDIR          = $(UTILS_COMMAND_PATH)mkdir
 MKSINFO        = $(UTILS_COMMAND_PATH)mksinfo
 MSGFMT         = $(UTILS_USR_BIN_PATH)msgfmt
 MV             = $(UTILS_COMMAND_PATH)mv
 NAWK           = $(UTILS_USR_BIN_PATH)nawk
-NM             = $(UTILS_CCS_BIN_PATH)nm
-PKGMK	       = $(UTILS_COMMAND_PATH)pkgmk
+PKGMK          = $(UTILS_COMMAND_PATH)pkgmk
 PRINTF         = $(UTILS_USR_BIN_PATH)printf
 PWD            = $(UTILS_COMMAND_PATH)pwd
-RC             = $(UTILS_COMMAND_PATH)rc
+READELF        = $(UTILS_USR_BIN_PATH)readelf
 RMDIR          = $(UTILS_COMMAND_PATH)rmdir
 RPM            = $(UTILS_COMMAND_PATH)rpm
-SCCS           = $(UTILS_CCS_BIN_PATH)sccs
+RPMBUILD       = $(UTILS_COMMAND_PATH)rpmbuild
 SED            = $(UTILS_COMMAND_PATH)sed
 SH             = $(UTILS_COMMAND_PATH)sh
 SHOWREV        = $(UTILS_USR_BIN_PATH)showrev
 SORT           = $(UTILS_COMMAND_PATH)sort
-STRIP          = $(UTILS_CCS_BIN_PATH)strip
 TAIL           = $(UTILS_USR_BIN_PATH)tail
 TAR            = $(UTILS_COMMAND_PATH)tar
 TEST           = $(UTILS_USR_BIN_PATH)test
@@ -144,6 +147,7 @@ UNAME          = $(UTILS_COMMAND_PATH)uname
 UNIQ           = $(UTILS_USR_BIN_PATH)uniq
 UNZIP          = $(UTILS_USR_BIN_PATH)unzip
 UNZIPSFX       = $(UTILS_DEVTOOL_PATH)unzipsfx
+XARGS          = $(UTILS_USR_BIN_PATH)xargs
 WC             = $(UTILS_USR_BIN_PATH)wc
 WHICH          = $(UTILS_USR_BIN_PATH)which
 YACC           = $(UTILS_CCS_BIN_PATH)yacc
@@ -169,6 +173,7 @@ ifeq ($(PLATFORM),windows)
   endif
   # Re-define some utilities
   LEX            =# override GNU Make intrinsic: no lex on windows
+  SHA1SUM        = $(UNIXCOMMAND_PATH)openssl sha1
 endif
 
 # Linux specific
@@ -177,19 +182,33 @@ ifeq ($(PLATFORM),linux)
   # Allows for builds on Debian GNU Linux, basename is in a different place
   BASENAME=$(firstword $(wildcard $(UTILS_COMMAND_PATH)basename) \
                        $(wildcard $(UTILS_USR_BIN_PATH)basename))
-
+  # RPM 4 has replaced "rpm -b" with an entirely new utility "rpmbuild".
+  # Also, some distribution (Ubuntu, Debian, others?) place the rpm command
+  # itself in /usr/bin rather than it's traditional home in /bin.
+  RPM=$(firstword $(wildcard $(UTILS_COMMAND_PATH)rpm) \
+		  $(wildcard $(UTILS_USR_BIN_PATH)rpm))
+  RPMBUILD=$(firstword $(wildcard $(UTILS_COMMAND_PATH)rpmbuild) \
+		       $(wildcard $(UTILS_USR_BIN_PATH)rpmbuild) \
+		       $(wildcard $(UTILS_COMMAND_PATH)rpm) \
+		       $(wildcard $(UTILS_USR_BIN_PATH)rpm))
+  # Most Linux distros have "sort" in /bin.  Ubuntu, Debian and perhaps
+  # others have it in /usr/bin.
+  SORT=$(firstword $(wildcard $(UTILS_COMMAND_PATH)sort) \
+		   $(wildcard $(UTILS_USR_BIN_PATH)sort))
   NAWK           = $(USRBIN_PATH)gawk
   # Intrinsic unix command, with backslash-escaped character interpretation
   ECHO           = /bin/echo -e
-  # These are really in UTILS_USR_BIN_PATH on Linux (only sccs is not)
-  AR             = $(UTILS_USR_BIN_PATH)ar
-  AS             = $(UTILS_USR_BIN_PATH)as
-  LD             = $(UTILS_USR_BIN_PATH)ld
+  # These are really in UTILS_USR_BIN_PATH on Linux
+  ifndef CROSS_COMPILE_ARCH
+    AR             = $(UTILS_USR_BIN_PATH)ar
+    AS             = $(UTILS_USR_BIN_PATH)as
+    LD             = $(UTILS_USR_BIN_PATH)ld
+    MCS            = $(UTILS_USR_BIN_PATH)mcs
+    NM             = $(UTILS_USR_BIN_PATH)nm
+    STRIP          = $(UTILS_USR_BIN_PATH)strip
+  endif
   LEX            = $(UTILS_USR_BIN_PATH)lex
-  MCS            = $(UTILS_USR_BIN_PATH)mcs
   M4             = $(UTILS_USR_BIN_PATH)m4
-  NM             = $(UTILS_USR_BIN_PATH)nm
-  STRIP          = $(UTILS_USR_BIN_PATH)strip
   YACC           = $(UTILS_USR_BIN_PATH)yacc
 endif
 

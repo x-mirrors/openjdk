@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@ PRODUCT = plugin
 include $(BUILDDIR)/common/Defs.gmk
 
 SUBDIRS = dom net
+include $(BUILDDIR)/common/Subdirs.gmk
+
 all build clean clobber::
 	$(SUBDIRS-loop)
 
