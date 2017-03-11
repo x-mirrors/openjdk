@@ -31,22 +31,28 @@ import java.awt.image.*;
 
 import java.util.Arrays;
 import java.util.List;
+import sun.awt.image.MultiResolutionImage;
+import sun.awt.image.MultiResolutionCachedImage;
 
 import sun.awt.image.SunWritableRaster;
 
 public class CImage extends CFRetainedResource {
     private static native long nativeCreateNSImageFromArray(int[] buffer, int w, int h);
+    private static native long nativeCreateNSImageFromBytes(byte[] buffer);
     private static native long nativeCreateNSImageFromArrays(int[][] buffers, int w[], int h[]);
     private static native long nativeCreateNSImageFromFileContents(String file);
     private static native long nativeCreateNSImageOfFileFromLaunchServices(String file);
     private static native long nativeCreateNSImageFromImageName(String name);
     private static native long nativeCreateNSImageFromIconSelector(int selector);
-    private static native void nativeCopyNSImageIntoArray(long image, int[] buffer, int w, int h);
+    private static native byte[] nativeGetPlatformImageBytes(int[] buffer, int w, int h);
+    private static native void nativeCopyNSImageIntoArray(long image, int[] buffer, int sw, int sh, int dw, int dh);
     private static native Dimension2D nativeGetNSImageSize(long image);
     private static native void nativeSetNSImageSize(long image, double w, double h);
+    private static native void nativeResizeNSImageRepresentations(long image, double w, double h);
+    private static native Dimension2D[] nativeGetNSImageRepresentationSizes(long image, double w, double h);
 
     static Creator creator = new Creator();
-    static Creator getCreator() {
+    public static Creator getCreator() {
         return creator;
     }
 
@@ -56,41 +62,41 @@ public class CImage extends CFRetainedResource {
         // This is used to create a CImage with an NSImage pointer. It MUST be a CFRetained
         // NSImage, and the CImage takes ownership of the non-GC retain. If callers need the
         // NSImage themselves, they MUST call retain on the NSImage themselves.
-        public BufferedImage createImageUsingNativeSize(final long image) {
+        public Image createImageUsingNativeSize(final long image) {
             if (image == 0) return null;
             final Dimension2D size = nativeGetNSImageSize(image);
-            return createBufferedImage(image, size.getWidth(), size.getHeight());
+            return createImage(image, size.getWidth(), size.getHeight());
         }
 
         // the width and height passed in as a parameter could differ than the width and the height of the NSImage (image), in that case, the image will be scaled
-        BufferedImage createBufferedImage(long image, double width, double height) {
+        Image createImage(long image, double width, double height) {
             if (image == 0) throw new Error("Unable to instantiate CImage with null native image reference.");
             return createImageWithSize(image, width, height);
         }
 
-        public BufferedImage createImageWithSize(final long image, final double width, final double height) {
+        public Image createImageWithSize(final long image, final double width, final double height) {
             final CImage img = new CImage(image);
             img.resize(width, height);
             return img.toImage();
         }
 
         // This is used to create a CImage that represents the icon of the given file.
-        public BufferedImage createImageOfFile(final String file, final int width, final int height) {
-            return createBufferedImage(nativeCreateNSImageOfFileFromLaunchServices(file), width, height);
+        public Image createImageOfFile(final String file, final int width, final int height) {
+            return createImage(nativeCreateNSImageOfFileFromLaunchServices(file), width, height);
         }
 
-        public BufferedImage createImageFromFile(final String file, final double width, final double height) {
+        public Image createImageFromFile(final String file, final double width, final double height) {
             final long image = nativeCreateNSImageFromFileContents(file);
             nativeSetNSImageSize(image, width, height);
-            return createBufferedImage(image, width, height);
+            return createImage(image, width, height);
         }
 
-        public BufferedImage createSystemImageFromSelector(final String iconSelector, final int width, final int height) {
-            return createBufferedImage(nativeCreateNSImageFromIconSelector(getSelectorAsInt(iconSelector)), width, height);
+        public Image createSystemImageFromSelector(final String iconSelector, final int width, final int height) {
+            return createImage(nativeCreateNSImageFromIconSelector(getSelectorAsInt(iconSelector)), width, height);
         }
 
         public Image createImageFromName(final String name, final int width, final int height) {
-            return createBufferedImage(nativeCreateNSImageFromImageName(name), width, height);
+            return createImage(nativeCreateNSImageFromImageName(name), width, height);
         }
 
         public Image createImageFromName(final String name) {
@@ -132,27 +138,52 @@ public class CImage extends CFRetainedResource {
             return ((DataBufferInt)bimg.getRaster().getDataBuffer()).getData();
         }
 
-        public CImage createFromImageImmediately(final Image image) {
-            int[]  buffer = imageToArray(image, false);
+        public byte[] getPlatformImageBytes(final Image image) {
+            int[] buffer = imageToArray(image, false);
 
             if (buffer == null) {
                 return null;
             }
 
-            return new CImage(nativeCreateNSImageFromArray(buffer, image.getWidth(null),
-                                                           image.getHeight(null)));
+            return nativeGetPlatformImageBytes(buffer, image.getWidth(null), image.getHeight(null));
+        }
+
+        /**
+         * Translates a byte array which contains platform-specific image data in the given format into an Image.
+         */
+        public Image createImageFromPlatformImageBytes(final byte[] buffer) {
+            return createImageUsingNativeSize(nativeCreateNSImageFromBytes(buffer));
         }
 
         // This is used to create a CImage from a Image
         public CImage createFromImage(final Image image) {
-            int[] buffer = imageToArray(image, true);
+            return createFromImage(image, true);
+        }
+
+        public CImage createFromImageImmediately(final Image image) {
+            return createFromImage(image, false);
+        }
+
+        // This is used to create a CImage from a Image
+        private CImage createFromImage(final Image image, final boolean prepareImage) {
+            if (image instanceof MultiResolutionImage) {
+                List<Image> resolutionVariants
+                        = ((MultiResolutionImage) image).getResolutionVariants();
+                return createFromImages(resolutionVariants, prepareImage);
+            }
+
+            int[] buffer = imageToArray(image, prepareImage);
             if (buffer == null) {
                 return null;
             }
             return new CImage(nativeCreateNSImageFromArray(buffer, image.getWidth(null), image.getHeight(null)));
         }
 
-        public CImage createFromImages(List<Image> images) {
+        public CImage createFromImages(final List<Image> images) {
+            return createFromImages(images, true);
+        }
+
+        private CImage createFromImages(final List<Image> images, final boolean prepareImage) {
             if (images == null || images.isEmpty()) {
                 return null;
             }
@@ -165,8 +196,8 @@ public class CImage extends CFRetainedResource {
 
             num = 0;
 
-            for (Image img : images) {
-                buffers[num] = imageToArray(img, true);
+            for (final Image img : images) {
+                buffers[num] = imageToArray(img, prepareImage);
                 if (buffers[num] == null) {
                     // Unable to process the image
                     continue;
@@ -181,9 +212,9 @@ public class CImage extends CFRetainedResource {
             }
 
             return new CImage(nativeCreateNSImageFromArrays(
-                        Arrays.copyOf(buffers, num),
-                        Arrays.copyOf(w, num),
-                        Arrays.copyOf(h, num)));
+                    Arrays.copyOf(buffers, num),
+                    Arrays.copyOf(w, num),
+                    Arrays.copyOf(h, num)));
         }
 
         static int getSelectorAsInt(final String fromString) {
@@ -202,18 +233,30 @@ public class CImage extends CFRetainedResource {
         super(nsImagePtr, true);
     }
 
-    /** @return A BufferedImage created from nsImagePtr, or null. */
-    public BufferedImage toImage() {
+    /** @return A MultiResolution image created from nsImagePtr, or null. */
+    private Image toImage() {
         if (ptr == 0) return null;
 
         final Dimension2D size = nativeGetNSImageSize(ptr);
         final int w = (int)size.getWidth();
         final int h = (int)size.getHeight();
 
-        final BufferedImage bimg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB_PRE);
+        Dimension2D[] sizes
+                = nativeGetNSImageRepresentationSizes(ptr,
+                        size.getWidth(), size.getHeight());
+
+        return sizes == null || sizes.length < 2 ?
+                new MultiResolutionCachedImage(w, h, (width, height)
+                        -> toImage(w, h, width, height))
+                : new MultiResolutionCachedImage(w, h, sizes, (width, height)
+                        -> toImage(w, h, width, height));
+    }
+
+    private BufferedImage toImage(int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
+        final BufferedImage bimg = new BufferedImage(dstWidth, dstHeight, BufferedImage.TYPE_INT_ARGB_PRE);
         final DataBufferInt dbi = (DataBufferInt)bimg.getRaster().getDataBuffer();
         final int[] buffer = SunWritableRaster.stealData(dbi, 0);
-        nativeCopyNSImageIntoArray(ptr, buffer, w, h);
+        nativeCopyNSImageIntoArray(ptr, buffer, srcWidth, srcHeight, dstWidth, dstHeight);
         SunWritableRaster.markDirty(dbi);
         return bimg;
     }
@@ -222,5 +265,9 @@ public class CImage extends CFRetainedResource {
     CImage resize(final double w, final double h) {
         if (ptr != 0) nativeSetNSImageSize(ptr, w, h);
         return this;
+    }
+
+    void resizeRepresentations(double w, double h) {
+        if (ptr != 0) nativeResizeNSImageRepresentations(ptr, w, h);
     }
 }

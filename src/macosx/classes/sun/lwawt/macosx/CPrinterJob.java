@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,12 +36,16 @@ import java.security.PrivilegedAction;
 import javax.print.*;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.standard.Media;
+import javax.print.attribute.standard.MediaPrintableArea;
+import javax.print.attribute.standard.MediaSize;
+import javax.print.attribute.standard.MediaSizeName;
 import javax.print.attribute.standard.PageRanges;
 
 import sun.java2d.*;
 import sun.print.*;
 
-public class CPrinterJob extends RasterPrinterJob {
+public final class CPrinterJob extends RasterPrinterJob {
     // NOTE: This uses RasterPrinterJob as a base, but it doesn't use
     // all of the RasterPrinterJob functions. RasterPrinterJob will
     // break down printing to pieces that aren't necessary under MacOSX
@@ -89,6 +93,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * returns true.
      * @see java.awt.GraphicsEnvironment#isHeadless
      */
+    @Override
     public boolean printDialog() throws HeadlessException {
         if (GraphicsEnvironment.isHeadless()) {
             throw new HeadlessException();
@@ -131,6 +136,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * @see java.awt.GraphicsEnvironment#isHeadless
      * @since     1.2
      */
+    @Override
     public PageFormat pageDialog(PageFormat page) throws HeadlessException {
         if (GraphicsEnvironment.isHeadless()) {
             throw new HeadlessException();
@@ -156,23 +162,19 @@ public class CPrinterJob extends RasterPrinterJob {
      * @return clone of <code>page</code>, altered to describe a default
      *                      <code>PageFormat</code>.
      */
+    @Override
     public PageFormat defaultPage(PageFormat page) {
         PageFormat newPage = (PageFormat)page.clone();
         getDefaultPage(newPage);
         return newPage;
     }
 
+    @Override
     protected void setAttributes(PrintRequestAttributeSet attributes) throws PrinterException {
         super.setAttributes(attributes);
 
         if (attributes == null) {
             return;
-        }
-
-        // See if this has an NSPrintInfo in it.
-        NSPrintInfo nsPrintInfo = (NSPrintInfo)attributes.get(NSPrintInfo.class);
-        if (nsPrintInfo != null) {
-            fNSPrintInfo = nsPrintInfo.getValue();
         }
 
         PageRanges pageRangesAttr =  (PageRanges)attributes.get(PageRanges.class);
@@ -216,7 +218,7 @@ public class CPrinterJob extends RasterPrinterJob {
         }
     }
 
-
+    @Override
     public void print(PrintRequestAttributeSet attributes) throws PrinterException {
         // NOTE: Some of this code is copied from RasterPrinterJob.
 
@@ -226,6 +228,11 @@ public class CPrinterJob extends RasterPrinterJob {
         // this will not work if the user clicks on the "Preview" button
         // However if the printer is a StreamPrintService, its the right path.
         PrintService psvc = getPrintService();
+
+        if (psvc == null) {
+            throw new PrinterException("No print service found.");
+        }
+
         if (psvc instanceof StreamPrintService) {
             spoolToService(psvc, attributes);
             return;
@@ -343,6 +350,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Returns the resolution in dots per inch across the width
      * of the page.
      */
+    @Override
     protected double getXRes() {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -352,6 +360,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Returns the resolution in dots per inch down the height
      * of the page.
      */
+    @Override
     protected double getYRes() {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -362,6 +371,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPrintableX(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -372,6 +382,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPrintableY(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -382,6 +393,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPrintableWidth(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -392,6 +404,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPrintableHeight(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -402,6 +415,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPageWidth(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -412,6 +426,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Value is in device pixels.
      * Not adjusted for orientation of the paper.
      */
+    @Override
     protected double getPhysicalPageHeight(Paper p) {
         // NOTE: This is not used in the CPrinterJob code path.
         return 0;
@@ -429,6 +444,7 @@ public class CPrinterJob extends RasterPrinterJob {
     /**
      * End a page.
      */
+    @Override
     protected void endPage(PageFormat format, Printable painter, int index) throws PrinterException {
         // NOTE: This is not used in the CPrinterJob code path.
         throw new PrinterException(sShouldNotReachHere);
@@ -441,6 +457,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * page. The width and height of the band is
      * specified by the caller.
      */
+    @Override
     protected void printBand(byte[] data, int x, int y, int width, int height) throws PrinterException {
         // NOTE: This is not used in the CPrinterJob code path.
         throw new PrinterException(sShouldNotReachHere);
@@ -450,6 +467,7 @@ public class CPrinterJob extends RasterPrinterJob {
      * Called by the print() method at the start of
      * a print job.
      */
+    @Override
     protected void startDoc() throws PrinterException {
         // NOTE: This is not used in the CPrinterJob code path.
         throw new PrinterException(sShouldNotReachHere);
@@ -459,12 +477,14 @@ public class CPrinterJob extends RasterPrinterJob {
      * Called by the print() method at the end of
      * a print job.
      */
+    @Override
     protected void endDoc() throws PrinterException {
         // NOTE: This is not used in the CPrinterJob code path.
         throw new PrinterException(sShouldNotReachHere);
     }
 
     /* Called by cancelDoc */
+    @Override
     protected native void abortDoc();
 
     /**
@@ -502,13 +522,18 @@ public class CPrinterJob extends RasterPrinterJob {
     /**
      * validate the paper size against the current printer.
      */
+    @Override
     protected native void validatePaper(Paper origPaper, Paper newPaper );
 
     // The following methods are CPrinterJob specific.
 
+    @Override
     protected void finalize() {
-        if (fNSPrintInfo != -1) {
-            dispose(fNSPrintInfo);
+        synchronized (fNSPrintInfoLock) {
+            if (fNSPrintInfo != -1) {
+                dispose(fNSPrintInfo);
+            }
+            fNSPrintInfo = -1;
         }
     }
 
@@ -721,5 +746,35 @@ public class CPrinterJob extends RasterPrinterJob {
     @Override
     protected void startPage(PageFormat arg0, Printable arg1, int arg2, boolean arg3) throws PrinterException {
         // TODO Auto-generated method stub
+    }
+
+    @Override
+    protected MediaSize getMediaSize(Media media, PrintService service,
+            PageFormat page) {
+        if (media == null || !(media instanceof MediaSizeName)) {
+            return getDefaultMediaSize(page);
+}
+        MediaSize size = MediaSize.getMediaSizeForName((MediaSizeName) media);
+        return size != null ? size : getDefaultMediaSize(page);
+    }
+
+    private MediaSize getDefaultMediaSize(PageFormat page){
+            final int inch = 72;
+            Paper paper = page.getPaper();
+            float width = (float) (paper.getWidth() / inch);
+            float height = (float) (paper.getHeight() / inch);
+            return new MediaSize(width, height, MediaSize.INCH);
+    }
+
+    @Override
+    protected MediaPrintableArea getDefaultPrintableArea(PageFormat page, double w, double h) {
+        final float dpi = 72.0f;
+        Paper paper = page.getPaper();
+        return new MediaPrintableArea(
+                (float) (paper.getImageableX() / dpi),
+                (float) (paper.getImageableY() / dpi),
+                (float) (paper.getImageableWidth() / dpi),
+                (float) (paper.getImageableHeight() / dpi),
+                MediaPrintableArea.INCH);
     }
 }

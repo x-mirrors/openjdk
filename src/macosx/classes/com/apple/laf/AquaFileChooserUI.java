@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1089,8 +1089,15 @@ public class AquaFileChooserUI extends FileChooserUI {
             super(f);
         }
 
-        public Component getTableCellRendererComponent(final JTable list, final Object value, final boolean isSelected, final boolean cellHasFocus, final int index, final int col) {
-            super.getTableCellRendererComponent(list, value, isSelected, false, index, col); // No focus border, thanks
+        public Component getTableCellRendererComponent(final JTable list,
+                                                       final Object value,
+                                                       final boolean isSelected,
+                                                       final boolean cellHasFocus,
+                                                       final int index,
+                                                       final int col) {
+            super.getTableCellRendererComponent(list, value, isSelected, false,
+                                                index,
+                                                col); // No focus border, thanks
             final File file = (File)value;
             final JFileChooser fc = getFileChooser();
             setText(fc.getName(file));
@@ -1105,8 +1112,14 @@ public class AquaFileChooserUI extends FileChooserUI {
             super(f);
         }
 
-        public Component getTableCellRendererComponent(final JTable list, final Object value, final boolean isSelected, final boolean cellHasFocus, final int index, final int col) {
-            super.getTableCellRendererComponent(list, value, isSelected, false, index, col);
+        public Component getTableCellRendererComponent(final JTable list,
+                                                       final Object value,
+                                                       final boolean isSelected,
+                                                       final boolean cellHasFocus,
+                                                       final int index,
+                                                       final int col) {
+            super.getTableCellRendererComponent(list, value, isSelected, false,
+                                                index, col);
             final File file = (File)fFileList.getValueAt(index, 0);
             setEnabled(isSelectableInList(file));
             final DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.SHORT);
@@ -1122,14 +1135,17 @@ public class AquaFileChooserUI extends FileChooserUI {
         }
     }
 
+    @Override
     public Dimension getPreferredSize(final JComponent c) {
-        return PREF_SIZE;
+        return new Dimension(PREF_WIDTH, PREF_HEIGHT);
     }
 
+    @Override
     public Dimension getMinimumSize(final JComponent c) {
-        return MIN_SIZE;
+        return new Dimension(MIN_WIDTH, MIN_HEIGHT);
     }
 
+    @Override
     public Dimension getMaximumSize(final JComponent c) {
         return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
     }
@@ -1266,65 +1282,75 @@ public class AquaFileChooserUI extends FileChooserUI {
     /**
      * Data model for a type-face selection combo-box.
      */
-    protected class FilterComboBoxModel extends DefaultListModel implements ComboBoxModel, PropertyChangeListener {
-        int selectedIndex = -1;
-
+    protected class FilterComboBoxModel extends AbstractListModel<FileFilter> implements ComboBoxModel<FileFilter>,
+            PropertyChangeListener {
+        protected FileFilter[] filters;
         protected FilterComboBoxModel() {
             super();
-            final FileFilter filters[] = getFileChooser().getChoosableFileFilters();
-            for (int i = 0; i < filters.length; i++) {
-                this.add(i, filters[i]);
-            }
+            filters = getFileChooser().getChoosableFileFilters();
         }
 
-        public void propertyChange(final PropertyChangeEvent e) {
-            final String prop = e.getPropertyName();
-            if (prop == JFileChooser.CHOOSABLE_FILE_FILTER_CHANGED_PROPERTY) {
-                this.clear();
-                final FileFilter filters[] = (FileFilter[])e.getNewValue();
-
-                for (int i = 0; i < filters.length; i++) {
-                    this.add(i, filters[i]);
-                }
-
+        public void propertyChange(PropertyChangeEvent e) {
+            String prop = e.getPropertyName();
+            if(prop == JFileChooser.CHOOSABLE_FILE_FILTER_CHANGED_PROPERTY) {
+                filters = (FileFilter[]) e.getNewValue();
                 fireContentsChanged(this, -1, -1);
             } else if (prop == JFileChooser.FILE_FILTER_CHANGED_PROPERTY) {
-                final FileFilter currentFilter = (FileFilter)e.getNewValue();
-                FileFilter filters[] = getFileChooser().getChoosableFileFilters();
-
-                boolean found = false;
-                if (currentFilter != null) {
-                    for (final FileFilter element : filters) {
-                        if (element == currentFilter) {
-                            found = true;
-                        }
-                    }
-                    if (found == false) {
-                        getFileChooser().addChoosableFileFilter(currentFilter);
-                    }
-                }
-
-                filters = getFileChooser().getChoosableFileFilters();
                 setSelectedItem(e.getNewValue());
             }
         }
 
-        public void setSelectedItem(final Object filter) {
-            if (filter != null) {
-                selectedIndex = this.indexOf(filter);
+        public void setSelectedItem(Object filter) {
+            if (filter != null && !containsFileFilter(filter)) {
+                getFileChooser().setFileFilter((FileFilter) filter);
                 fireContentsChanged(this, -1, -1);
             }
         }
 
         public Object getSelectedItem() {
-            final Object returnValue = null;
-
-            if (this.size() > 0) {
-                if ((selectedIndex != -1) && (selectedIndex < size())) { return this.get(selectedIndex); }
+            // Ensure that the current filter is in the list.
+            // NOTE: we shouldnt' have to do this, since JFileChooser adds
+            // the filter to the choosable filters list when the filter
+            // is set. Lets be paranoid just in case someone overrides
+            // setFileFilter in JFileChooser.
+            FileFilter currentFilter = getFileChooser().getFileFilter();
+            boolean found = false;
+            if(currentFilter != null) {
+                for (FileFilter filter : filters) {
+                    if (filter == currentFilter) {
+                        found = true;
+                    }
+                }
+                if(found == false) {
+                    getFileChooser().addChoosableFileFilter(currentFilter);
+                }
             }
-
-            return returnValue;
+            return getFileChooser().getFileFilter();
         }
+
+        public int getSize() {
+            if(filters != null) {
+                return filters.length;
+            } else {
+                return 0;
+            }
+        }
+
+        public FileFilter getElementAt(int index) {
+            if(index > getSize() - 1) {
+                // This shouldn't happen. Try to recover gracefully.
+                return getFileChooser().getFileFilter();
+            }
+            if(filters != null) {
+                return filters[index];
+            } else {
+                return null;
+            }
+        }
+    }
+
+    private boolean containsFileFilter(Object fileFilter) {
+        return Objects.equals(fileFilter, getFileChooser().getFileFilter());
     }
 
     /**
@@ -1336,7 +1362,10 @@ public class AquaFileChooserUI extends FileChooserUI {
         }
 
         public void actionPerformed(final ActionEvent e) {
-            getFileChooser().setFileFilter((FileFilter)filterComboBox.getSelectedItem());
+            Object selectedFilter = filterComboBox.getSelectedItem();
+            if (!containsFileFilter(selectedFilter)) {
+                getFileChooser().setFileFilter((FileFilter) selectedFilter);
+            }
         }
     }
 
@@ -1780,12 +1809,8 @@ public class AquaFileChooserUI extends FileChooserUI {
 
     private static final int PREF_WIDTH = 550;
     private static final int PREF_HEIGHT = 400;
-    private static final Dimension PREF_SIZE = new Dimension(PREF_WIDTH, PREF_HEIGHT);
-
     private static final int MIN_WIDTH = 400;
     private static final int MIN_HEIGHT = 250;
-    private static final Dimension MIN_SIZE = new Dimension(MIN_WIDTH, MIN_HEIGHT);
-
     private static final int LIST_MIN_WIDTH = 400;
     private static final int LIST_MIN_HEIGHT = 100;
     private static final Dimension LIST_MIN_SIZE = new Dimension(LIST_MIN_WIDTH, LIST_MIN_HEIGHT);

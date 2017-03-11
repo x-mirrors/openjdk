@@ -27,13 +27,26 @@ WIN_VERIFY_LIB := $(JDK_OUTPUTDIR)/objs/libverify/verify.lib
 
 ##########################################################################################
 
-BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
+BUILD_LIBFDLIBM_OPTIMIZATION := NONE
 
-ifneq ($(OPENJDK_TARGET_OS), solaris)
-  BUILD_LIBFDLIBM_OPTIMIZATION := NONE
+ifeq ($(OPENJDK_TARGET_OS), solaris)
+  BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
+endif
+
+ifeq ($(OPENJDK_TARGET_OS), linux)
+  ifeq ($(OPENJDK_TARGET_CPU), ppc64)
+    BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
+  else ifeq ($(OPENJDK_TARGET_CPU), ppc64le)
+    BUILD_LIBFDLIBM_OPTIMIZATION := HIGH
+  endif
 endif
 
 ifneq ($(OPENJDK_TARGET_OS), macosx)
+  # Unfortunately, '-ffp-contract' is only available since gcc 4.6. For ppc64le
+  # that's no problem since ppc64le support only appeared in gcc 4.8.3. But on
+  # ppc64 (big endian) we traditionally compiled with gcc 4.3 which only knows
+  # '-mno-fused-madd'. However, that's still not enough to get the float
+  # computations right - we additionally have to supply '-fno-strict-aliasing'.
   $(eval $(call SetupNativeCompilation,BUILD_LIBFDLIBM, \
       STATIC_LIBRARY := fdlibm, \
       OUTPUT_DIR := $(JDK_OUTPUTDIR)/objs, \
@@ -43,6 +56,9 @@ ifneq ($(OPENJDK_TARGET_OS), macosx)
       CFLAGS := $(CFLAGS_JDKLIB) \
           -I$(JDK_TOPDIR)/src/share/native/java/lang/fdlibm/include, \
       CFLAGS_windows_debug := -DLOGGING, \
+      CFLAGS_aix := -qfloat=nomaf, \
+      CFLAGS_linux_ppc64 := -mno-fused-madd -fno-strict-aliasing, \
+      CFLAGS_linux_ppc64le := -ffp-contract=off, \
       ARFLAGS := $(ARFLAGS), \
       OBJECT_DIR := $(JDK_OUTPUTDIR)/objs/libfdlibm, \
       DEBUG_SYMBOLS := $(DEBUG_ALL_BINARIES)))
@@ -128,9 +144,9 @@ LIBJAVA_SRC_DIRS := $(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/native/java/l
     $(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/native/common \
     $(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/native/java/util
 
-ifneq ($(OPENJDK_TARGET_OS), macosx)
+ifeq ($(OPENJDK_TARGET_OS), windows)
   LIBJAVA_SRC_DIRS += $(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/native/sun/util/locale/provider
-else
+else ifeq ($(OPENJDK_TARGET_OS), macosx)
   LIBJAVA_SRC_DIRS += $(JDK_TOPDIR)/src/macosx/native/sun/util/locale/provider
 endif
 
@@ -198,14 +214,16 @@ $(eval $(call SetupNativeCompilation,BUILD_LIBJAVA, \
     LDFLAGS_SUFFIX_posix := -ljvm -lverify, \
     LDFLAGS_SUFFIX_solaris := -lsocket -lnsl -lscf $(LIBDL) $(BUILD_LIBFDLIBM) -lc, \
     LDFLAGS_SUFFIX_linux := $(LIBDL) $(BUILD_LIBFDLIBM), \
+    LDFLAGS_SUFFIX_aix := $(LIBDL) $(BUILD_LIBFDLIBM) -lm,\
     LDFLAGS_SUFFIX_macosx := -L$(JDK_OUTPUTDIR)/objs/ -lfdlibm \
         -framework CoreFoundation \
         -framework Foundation \
         -framework Security -framework SystemConfiguration, \
     LDFLAGS_SUFFIX_windows := -export:winFileHandleOpen -export:handleLseek \
+        -export:getErrorString \
         jvm.lib $(BUILD_LIBFDLIBM) $(WIN_VERIFY_LIB) \
         shell32.lib delayimp.lib -DELAYLOAD:shell32.dll \
-        advapi32.lib, \
+        advapi32.lib version.lib, \
     VERSIONINFO_RESOURCE := $(JDK_TOPDIR)/src/windows/resource/version.rc, \
     RC_FLAGS := $(RC_FLAGS) \
         -D "JDK_FNAME=java.dll" \
@@ -228,9 +246,9 @@ $(BUILD_LIBJAVA): $(BUILD_LIBFDLIBM)
 BUILD_LIBZIP_EXCLUDES :=
 ifeq ($(USE_EXTERNAL_LIBZ), true)
   LIBZ := -lz
-  LIBZIP_EXCLUDES += zlib-1.2.5
+  LIBZIP_EXCLUDES += zlib-1.2.8
 else
-  ZLIB_CPPFLAGS := -I$(JDK_TOPDIR)/src/share/native/java/util/zip/zlib-1.2.5
+  ZLIB_CPPFLAGS := -I$(JDK_TOPDIR)/src/share/native/java/util/zip/zlib-1.2.8
 endif
 
 BUILD_LIBZIP_REORDER :=
@@ -262,10 +280,11 @@ $(eval $(call SetupNativeCompilation,BUILD_LIBZIP, \
         $(call SET_SHARED_LIBRARY_ORIGIN) \
         $(EXPORT_ZIP_FUNCS), \
     LDFLAGS_windows := -export:ZIP_Open -export:ZIP_Close -export:ZIP_FindEntry \
-        -export:ZIP_ReadEntry -export:ZIP_GetNextEntry jvm.lib \
+        -export:ZIP_ReadEntry -export:ZIP_GetNextEntry -export:ZIP_CRC32 jvm.lib \
         $(WIN_JAVA_LIB), \
     LDFLAGS_SUFFIX_linux := -ljvm -ljava $(LIBZ), \
     LDFLAGS_SUFFIX_solaris := -ljvm -ljava $(LIBZ) -lc, \
+    LDFLAGS_SUFFIX_aix := -ljvm -ljava $(LIBZ),\
     LDFLAGS_SUFFIX_macosx := $(LIBZ) -ljava -ljvm, \
     VERSIONINFO_RESOURCE := $(JDK_TOPDIR)/src/windows/resource/version.rc, \
     RC_FLAGS := $(RC_FLAGS) \
@@ -381,7 +400,7 @@ ifeq ($(OPENJDK_TARGET_OS), macosx)
 endif
 
 ifneq ($(USE_EXTERNAL_LIBZ), true)
-  BUILD_LIBJLI_SRC_DIRS += $(JDK_TOPDIR)/src/share/native/java/util/zip/zlib-1.2.5
+  BUILD_LIBJLI_SRC_DIRS += $(JDK_TOPDIR)/src/share/native/java/util/zip/zlib-1.2.8
   LIBJLI_CFLAGS += $(ZLIB_CPPFLAGS)
   BUILD_LIBJLI_FILES += \
       inflate.c \
@@ -414,6 +433,7 @@ $(eval $(call SetupNativeCompilation,BUILD_LIBJLI, \
     LDFLAGS_macosx := -framework Cocoa -framework Security -framework ApplicationServices, \
     LDFLAGS_SUFFIX_solaris := $(LIBZ) $(LIBDL) -lc, \
     LDFLAGS_SUFFIX_linux := $(LIBZ) $(LIBDL) -lc -lpthread, \
+    LDFLAGS_SUFFIX_aix := $(LIBZ) $(LIBDL),\
     LDFLAGS_SUFFIX_macosx := $(LIBZ), \
     LDFLAGS_SUFFIX_windows := \
         -export:JLI_Launch \
@@ -479,6 +499,22 @@ else ifeq ($(OPENJDK_TARGET_OS), macosx)
 	$(call install-file)
 
   BUILD_LIBRARIES += $(JDK_OUTPUTDIR)/objs/libjli_static.a
+
+else ifeq ($(OPENJDK_TARGET_OS), aix)
+  # AIX also requires a static libjli because the compiler doesn't support '-rpath'
+  $(eval $(call SetupNativeCompilation,BUILD_LIBJLI_STATIC,\
+      STATIC_LIBRARY:=jli_static,\
+      OUTPUT_DIR:=$(JDK_OUTPUTDIR)/objs,\
+      SRC:=$(BUILD_LIBJLI_SRC_DIRS),\
+      INCLUDE_FILES:=$(BUILD_LIBJLI_FILES),\
+      LANG:=C,\
+      OPTIMIZATION:=HIGH, \
+      CFLAGS:=$(STATIC_LIBRARY_FLAGS) $(LIBJLI_CFLAGS),\
+      ARFLAGS:=$(ARFLAGS),\
+      OBJECT_DIR:=$(JDK_OUTPUTDIR)/objs/libjli_static))
+
+  BUILD_LIBRARIES += $(JDK_OUTPUTDIR)/objs/libjli_static.a
+
 endif
 
 ##########################################################################################
