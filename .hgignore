@@ -1,10 +1,10 @@
 ^build/
 ^dist/
-^.idea/
-nbproject/private/
 ^webrev
-^.src-rev$
-^.jib/
+^testoutput/
+/nbproject/private/
+^make/netbeans/.*/build/
+^make/netbeans/.*/dist/
 .DS_Store
-.metadata/
-.recommenders/
+.*/JTreport/.*
+.*/JTwork/.*
