@@ -1,8 +1,7 @@
 ^build/
 ^dist/
-^testoutput/
-/nbproject/private/
-^make/netbeans/.*/build/
-^make/netbeans/.*/dist/
+nbproject/private/
+^webrev
 ^.hgtip
+^.bridge2
 .DS_Store
