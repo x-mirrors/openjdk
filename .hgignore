@@ -2,7 +2,9 @@
 ^dist/
 ^testoutput/
 /nbproject/private/
+^webrev
 ^make/netbeans/.*/build/
 ^make/netbeans/.*/dist/
 ^.hgtip
+^.bridge2
 .DS_Store
