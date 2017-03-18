@@ -1,7 +1,7 @@
-!.gitkeep
-.git
-.project
 build/
 dist/
-webrev/
 nbproject/private/
+webrev
+.hgtip
+.bridge2
+*.DS_Store
